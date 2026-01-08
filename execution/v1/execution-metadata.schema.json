@@ -1,0 +1,369 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://agentics.org/schemas/execution/v1/execution-metadata.schema.json",
+  "title": "Execution Metadata",
+  "description": "Captures comprehensive metadata about execution context including initiator, environment, layer requirements, and validation results.",
+  "type": "object",
+  "required": [
+    "execution_id",
+    "initiated_by",
+    "initiated_at",
+    "environment",
+    "contract_version",
+    "layers_required",
+    "layers_executed",
+    "validation_results"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "execution_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Unique identifier for this execution instance",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+    },
+    "initiated_by": {
+      "$ref": "#/definitions/Initiator",
+      "description": "Information about who or what initiated this execution"
+    },
+    "initiated_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO8601 timestamp of when the execution was initiated"
+    },
+    "completed_at": {
+      "type": ["string", "null"],
+      "format": "date-time",
+      "description": "ISO8601 timestamp of when the execution completed, or null if still in progress"
+    },
+    "environment": {
+      "$ref": "#/definitions/Environment",
+      "description": "The deployment environment where this execution is running"
+    },
+    "contract_version": {
+      "type": "string",
+      "description": "Semantic version of the contracts being used",
+      "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$"
+    },
+    "layers_required": {
+      "type": "array",
+      "description": "Array of layer types that MUST participate for this execution to be valid",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/definitions/LayerType"
+      },
+      "uniqueItems": true
+    },
+    "layers_executed": {
+      "type": "array",
+      "description": "Array of layer types that DID participate in this execution",
+      "items": {
+        "$ref": "#/definitions/LayerType"
+      },
+      "uniqueItems": true
+    },
+    "validation_results": {
+      "$ref": "#/definitions/ValidationResults",
+      "description": "Results of validating the execution against contract requirements"
+    },
+    "execution_context": {
+      "$ref": "#/definitions/ExecutionContext",
+      "description": "Additional context about the execution environment"
+    },
+    "parent_execution_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "If this execution is a child of another, the parent's execution ID",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+    },
+    "correlation_id": {
+      "type": "string",
+      "description": "Correlation ID for tracking related executions across systems",
+      "pattern": "^[a-zA-Z0-9_-]{1,256}$",
+      "maxLength": 256
+    },
+    "tags": {
+      "type": "object",
+      "description": "Key-value tags for categorization and filtering",
+      "additionalProperties": {
+        "type": "string",
+        "maxLength": 256
+      },
+      "propertyNames": {
+        "pattern": "^[a-zA-Z][a-zA-Z0-9_]{0,63}$"
+      }
+    }
+  },
+  "definitions": {
+    "LayerType": {
+      "type": "string",
+      "enum": [
+        "foundational",
+        "intelligence",
+        "core",
+        "integration",
+        "infra",
+        "apex"
+      ],
+      "description": "The architectural layer in the agentics stack"
+    },
+    "Environment": {
+      "type": "string",
+      "enum": [
+        "development",
+        "staging",
+        "production"
+      ],
+      "description": "The deployment environment"
+    },
+    "InitiatorType": {
+      "type": "string",
+      "enum": [
+        "cli",
+        "service",
+        "api"
+      ],
+      "description": "The type of initiator that started the execution"
+    },
+    "Initiator": {
+      "type": "object",
+      "description": "Information about who or what initiated the execution",
+      "required": [
+        "type",
+        "identifier"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "$ref": "#/definitions/InitiatorType",
+          "description": "The type of initiator"
+        },
+        "identifier": {
+          "type": "string",
+          "description": "Unique identifier for the initiator (user ID, service name, API key hash, etc.)",
+          "pattern": "^[a-zA-Z0-9_.@/-]{1,256}$",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "version": {
+          "type": "string",
+          "description": "Version of the initiating client/service",
+          "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$"
+        },
+        "ip_address": {
+          "type": "string",
+          "description": "IP address of the initiator (if applicable)",
+          "oneOf": [
+            {
+              "format": "ipv4"
+            },
+            {
+              "format": "ipv6"
+            }
+          ]
+        },
+        "user_agent": {
+          "type": "string",
+          "description": "User agent string (if applicable)",
+          "maxLength": 1024
+        }
+      }
+    },
+    "ContractViolation": {
+      "type": "object",
+      "description": "Details of a contract violation detected during validation",
+      "required": [
+        "violation_id",
+        "violation_type",
+        "severity",
+        "message",
+        "detected_at"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "violation_id": {
+          "type": "string",
+          "description": "Unique identifier for this violation instance",
+          "pattern": "^[a-zA-Z0-9_-]{1,128}$"
+        },
+        "violation_type": {
+          "type": "string",
+          "enum": [
+            "missing_layer",
+            "invalid_sequence",
+            "timeout_exceeded",
+            "contract_version_mismatch",
+            "capability_not_found",
+            "dependency_failed",
+            "output_validation_failed",
+            "authentication_failed",
+            "authorization_failed",
+            "rate_limit_exceeded",
+            "schema_validation_failed"
+          ],
+          "description": "The type of violation detected"
+        },
+        "severity": {
+          "type": "string",
+          "enum": [
+            "error",
+            "warning",
+            "info"
+          ],
+          "description": "Severity level of the violation"
+        },
+        "message": {
+          "type": "string",
+          "description": "Human-readable description of the violation",
+          "maxLength": 4096
+        },
+        "detected_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When the violation was detected"
+        },
+        "layer": {
+          "$ref": "#/definitions/LayerType",
+          "description": "The layer where the violation occurred (if applicable)"
+        },
+        "node_id": {
+          "type": "string",
+          "description": "The node ID where the violation occurred (if applicable)",
+          "pattern": "^[a-zA-Z0-9_-]{1,128}$"
+        },
+        "expected_value": {
+          "type": "string",
+          "description": "The expected value or state",
+          "maxLength": 1024
+        },
+        "actual_value": {
+          "type": "string",
+          "description": "The actual value or state that caused the violation",
+          "maxLength": 1024
+        },
+        "remediation": {
+          "type": "string",
+          "description": "Suggested remediation for the violation",
+          "maxLength": 2048
+        }
+      }
+    },
+    "ValidationResults": {
+      "type": "object",
+      "description": "Results of validating the execution against contract requirements",
+      "required": [
+        "all_layers_present",
+        "missing_layers",
+        "contract_violations"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "all_layers_present": {
+          "type": "boolean",
+          "description": "Whether all required layers participated in the execution"
+        },
+        "missing_layers": {
+          "type": "array",
+          "description": "List of required layers that did not participate",
+          "items": {
+            "$ref": "#/definitions/LayerType"
+          },
+          "uniqueItems": true
+        },
+        "contract_violations": {
+          "type": "array",
+          "description": "List of contract violations detected during execution",
+          "items": {
+            "$ref": "#/definitions/ContractViolation"
+          }
+        },
+        "validation_timestamp": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When the validation was performed"
+        },
+        "validator_version": {
+          "type": "string",
+          "description": "Version of the validator that performed the validation",
+          "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$"
+        },
+        "total_violations": {
+          "type": "integer",
+          "description": "Total count of violations",
+          "minimum": 0
+        },
+        "error_count": {
+          "type": "integer",
+          "description": "Count of error-level violations",
+          "minimum": 0
+        },
+        "warning_count": {
+          "type": "integer",
+          "description": "Count of warning-level violations",
+          "minimum": 0
+        },
+        "is_valid": {
+          "type": "boolean",
+          "description": "Overall validity status (false if any error-level violations exist)"
+        }
+      }
+    },
+    "ExecutionContext": {
+      "type": "object",
+      "description": "Additional context about the execution environment",
+      "additionalProperties": false,
+      "properties": {
+        "region": {
+          "type": "string",
+          "description": "Geographic region where execution is running",
+          "pattern": "^[a-z]{2}-[a-z]+-[0-9]+$"
+        },
+        "availability_zone": {
+          "type": "string",
+          "description": "Availability zone within the region",
+          "pattern": "^[a-z]{2}-[a-z]+-[0-9]+[a-z]$"
+        },
+        "cluster_id": {
+          "type": "string",
+          "description": "Identifier of the cluster handling this execution",
+          "pattern": "^[a-zA-Z0-9_-]{1,128}$"
+        },
+        "node_id": {
+          "type": "string",
+          "description": "Identifier of the specific node handling this execution",
+          "pattern": "^[a-zA-Z0-9_-]{1,128}$"
+        },
+        "tenant_id": {
+          "type": "string",
+          "description": "Tenant identifier for multi-tenant deployments",
+          "pattern": "^[a-zA-Z0-9_-]{1,128}$"
+        },
+        "namespace": {
+          "type": "string",
+          "description": "Kubernetes namespace or equivalent isolation boundary",
+          "pattern": "^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$"
+        },
+        "request_id": {
+          "type": "string",
+          "description": "Original request ID that triggered this execution",
+          "pattern": "^[a-zA-Z0-9_-]{1,256}$"
+        },
+        "session_id": {
+          "type": "string",
+          "description": "Session ID if part of an ongoing session",
+          "pattern": "^[a-zA-Z0-9_-]{1,256}$"
+        },
+        "feature_flags": {
+          "type": "object",
+          "description": "Feature flags active for this execution",
+          "additionalProperties": {
+            "type": "boolean"
+          },
+          "propertyNames": {
+            "pattern": "^[a-zA-Z][a-zA-Z0-9_]{0,63}$"
+          }
+        }
+      }
+    }
+  }
+}

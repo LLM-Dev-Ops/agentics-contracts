@@ -1,0 +1,466 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://agentics.org/schemas/simulation/v1/errors.schema.json",
+  "title": "Simulation Error",
+  "description": "Error schema for simulation failures. Provides comprehensive error categorization, layer and service attribution, and contract violation tracking.",
+  "type": "object",
+  "required": [
+    "error_id",
+    "execution_id",
+    "simulation_id",
+    "error_code",
+    "error_category",
+    "message",
+    "timestamp",
+    "recoverable"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "error_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Unique identifier for this error instance"
+    },
+    "execution_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Execution graph identifier for tracing"
+    },
+    "simulation_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Simulation request identifier this error belongs to"
+    },
+    "error_code": {
+      "type": "string",
+      "pattern": "^SIM-[A-Z]{2,4}-[0-9]{3,4}$",
+      "description": "Categorized error code. Format: SIM-{CATEGORY}-{NUMBER}. Categories: VAL (validation), EXE (execution), TIM (timeout), LAY (layer), CON (contract), SYS (system), NET (network), RES (resource)",
+      "examples": [
+        "SIM-VAL-001",
+        "SIM-EXE-100",
+        "SIM-TIM-001",
+        "SIM-LAY-001",
+        "SIM-CON-001",
+        "SIM-SYS-500",
+        "SIM-NET-001",
+        "SIM-RES-001"
+      ]
+    },
+    "error_category": {
+      "type": "string",
+      "enum": ["validation", "execution", "timeout", "layer_missing", "contract_violation"],
+      "description": "High-level category of the error: validation (request/response validation failures), execution (runtime failures), timeout (duration exceeded), layer_missing (required layer not exercised), contract_violation (schema or constraint violations)"
+    },
+    "message": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4096,
+      "description": "Human-readable error message describing what went wrong"
+    },
+    "layer": {
+      "type": "string",
+      "enum": [
+        "foundational_services",
+        "intelligence_services",
+        "core_bundles",
+        "integration_targets"
+      ],
+      "description": "Architectural layer where the error occurred, if applicable"
+    },
+    "service": {
+      "type": "object",
+      "description": "Service where the error occurred, if applicable",
+      "properties": {
+        "service_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Unique identifier of the service"
+        },
+        "service_name": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Name of the service"
+        },
+        "service_version": {
+          "type": "string",
+          "description": "Version of the service"
+        },
+        "operation": {
+          "type": "string",
+          "description": "Specific operation that failed"
+        },
+        "endpoint": {
+          "type": "string",
+          "format": "uri",
+          "description": "Service endpoint if applicable"
+        }
+      }
+    },
+    "contract_violated": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Identifier or name of the contract that was violated, if error_category is contract_violation"
+    },
+    "contract_violation_details": {
+      "type": "object",
+      "description": "Detailed information about contract violations",
+      "properties": {
+        "contract_version": {
+          "type": "string",
+          "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$",
+          "description": "Version of the violated contract"
+        },
+        "violation_type": {
+          "type": "string",
+          "enum": [
+            "schema_mismatch",
+            "missing_required_field",
+            "invalid_type",
+            "constraint_violation",
+            "format_error",
+            "enum_value_invalid",
+            "pattern_mismatch",
+            "min_max_violation",
+            "dependency_missing"
+          ],
+          "description": "Specific type of contract violation"
+        },
+        "json_path": {
+          "type": "string",
+          "description": "JSON path to the violating element"
+        },
+        "expected": {
+          "type": "string",
+          "description": "Expected value, type, or constraint"
+        },
+        "actual": {
+          "type": "string",
+          "description": "Actual value that caused the violation"
+        },
+        "schema_location": {
+          "type": "string",
+          "format": "uri",
+          "description": "URI location of the schema that was violated"
+        }
+      }
+    },
+    "stack_trace": {
+      "type": "string",
+      "maxLength": 65536,
+      "description": "Stack trace for debugging purposes. May be omitted in production environments."
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO8601 timestamp when the error occurred"
+    },
+    "recoverable": {
+      "type": "boolean",
+      "description": "Indicates whether the simulation can potentially recover from this error through retry or alternative execution path"
+    },
+    "recovery_suggestions": {
+      "type": "array",
+      "description": "Suggested actions to recover from or resolve this error",
+      "items": {
+        "type": "object",
+        "required": ["suggestion", "action_type"],
+        "properties": {
+          "suggestion": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Human-readable recovery suggestion"
+          },
+          "action_type": {
+            "type": "string",
+            "enum": ["retry", "skip", "reconfigure", "escalate", "manual_intervention", "rollback"],
+            "description": "Type of recovery action suggested"
+          },
+          "parameters": {
+            "type": "object",
+            "additionalProperties": true,
+            "description": "Parameters for the recovery action"
+          },
+          "confidence": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1,
+            "description": "Confidence level that this suggestion will resolve the error"
+          }
+        }
+      }
+    },
+    "context": {
+      "type": "object",
+      "description": "Additional contextual information about the error",
+      "additionalProperties": true,
+      "properties": {
+        "execution_node_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Execution graph node where error occurred"
+        },
+        "scenario_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Scenario being executed when error occurred"
+        },
+        "scenario_name": {
+          "type": "string",
+          "description": "Name of the scenario"
+        },
+        "step_index": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Step index within the scenario"
+        },
+        "retry_count": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of retry attempts before this error"
+        },
+        "elapsed_time_ms": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Time elapsed since simulation start in milliseconds"
+        },
+        "request_id": {
+          "type": "string",
+          "description": "Request ID if error occurred during an external call"
+        },
+        "correlation_id": {
+          "type": "string",
+          "description": "Correlation ID for distributed tracing"
+        },
+        "http_status_code": {
+          "type": "integer",
+          "minimum": 100,
+          "maximum": 599,
+          "description": "HTTP status code if error is HTTP-related"
+        },
+        "http_method": {
+          "type": "string",
+          "enum": ["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"],
+          "description": "HTTP method if error is HTTP-related"
+        },
+        "request_payload_sample": {
+          "type": "string",
+          "maxLength": 4096,
+          "description": "Truncated sample of the request payload for debugging"
+        },
+        "response_payload_sample": {
+          "type": "string",
+          "maxLength": 4096,
+          "description": "Truncated sample of the response payload for debugging"
+        }
+      }
+    },
+    "related_errors": {
+      "type": "array",
+      "description": "Related errors that may have contributed to or resulted from this error",
+      "items": {
+        "type": "object",
+        "required": ["error_id", "relationship"],
+        "properties": {
+          "error_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "ID of the related error"
+          },
+          "relationship": {
+            "type": "string",
+            "enum": ["caused_by", "caused", "related", "duplicate"],
+            "description": "Relationship to this error"
+          },
+          "error_code": {
+            "type": "string",
+            "pattern": "^SIM-[A-Z]{2,4}-[0-9]{3,4}$",
+            "description": "Error code of the related error"
+          }
+        }
+      }
+    },
+    "severity": {
+      "type": "string",
+      "enum": ["critical", "high", "medium", "low"],
+      "default": "high",
+      "description": "Severity level of the error"
+    },
+    "impact": {
+      "type": "object",
+      "description": "Impact assessment of this error",
+      "properties": {
+        "scenarios_affected": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of scenarios affected by this error"
+        },
+        "layers_affected": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "foundational_services",
+              "intelligence_services",
+              "core_bundles",
+              "integration_targets"
+            ]
+          },
+          "description": "Layers affected by this error"
+        },
+        "blocks_completion": {
+          "type": "boolean",
+          "description": "Whether this error blocks simulation completion"
+        },
+        "data_integrity_risk": {
+          "type": "boolean",
+          "default": false,
+          "description": "Whether this error poses a data integrity risk"
+        }
+      }
+    },
+    "metadata": {
+      "type": "object",
+      "description": "Additional metadata about the error",
+      "additionalProperties": true,
+      "properties": {
+        "simulation_engine_version": {
+          "type": "string",
+          "description": "Version of simulation engine that reported the error"
+        },
+        "runner_version": {
+          "type": "string",
+          "description": "Version of simulator runner"
+        },
+        "environment": {
+          "type": "string",
+          "description": "Environment where error occurred"
+        },
+        "host": {
+          "type": "string",
+          "description": "Host identifier"
+        },
+        "pod_name": {
+          "type": "string",
+          "description": "Kubernetes pod name if applicable"
+        },
+        "container_id": {
+          "type": "string",
+          "description": "Container ID if applicable"
+        },
+        "tags": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Key-value tags for categorization"
+        }
+      }
+    }
+  },
+  "definitions": {
+    "error_codes": {
+      "description": "Reference for standard error codes",
+      "type": "object",
+      "properties": {
+        "validation_errors": {
+          "type": "object",
+          "description": "Validation error codes (SIM-VAL-XXX)",
+          "properties": {
+            "SIM-VAL-001": { "const": "Invalid request schema" },
+            "SIM-VAL-002": { "const": "Missing required field" },
+            "SIM-VAL-003": { "const": "Invalid field type" },
+            "SIM-VAL-004": { "const": "Invalid field format" },
+            "SIM-VAL-005": { "const": "Constraint violation" },
+            "SIM-VAL-006": { "const": "Invalid enum value" },
+            "SIM-VAL-007": { "const": "Pattern mismatch" },
+            "SIM-VAL-008": { "const": "Array bounds violation" },
+            "SIM-VAL-009": { "const": "Invalid UUID format" },
+            "SIM-VAL-010": { "const": "Invalid semver format" }
+          }
+        },
+        "execution_errors": {
+          "type": "object",
+          "description": "Execution error codes (SIM-EXE-XXX)",
+          "properties": {
+            "SIM-EXE-001": { "const": "Scenario execution failed" },
+            "SIM-EXE-002": { "const": "Step execution failed" },
+            "SIM-EXE-003": { "const": "Assertion failed" },
+            "SIM-EXE-004": { "const": "Setup failed" },
+            "SIM-EXE-005": { "const": "Teardown failed" },
+            "SIM-EXE-006": { "const": "Service unavailable" },
+            "SIM-EXE-007": { "const": "Connection failed" },
+            "SIM-EXE-008": { "const": "Authentication failed" },
+            "SIM-EXE-009": { "const": "Authorization failed" },
+            "SIM-EXE-010": { "const": "Rate limited" }
+          }
+        },
+        "timeout_errors": {
+          "type": "object",
+          "description": "Timeout error codes (SIM-TIM-XXX)",
+          "properties": {
+            "SIM-TIM-001": { "const": "Simulation timeout exceeded" },
+            "SIM-TIM-002": { "const": "Scenario timeout exceeded" },
+            "SIM-TIM-003": { "const": "Step timeout exceeded" },
+            "SIM-TIM-004": { "const": "Connection timeout" },
+            "SIM-TIM-005": { "const": "Response timeout" }
+          }
+        },
+        "layer_errors": {
+          "type": "object",
+          "description": "Layer error codes (SIM-LAY-XXX)",
+          "properties": {
+            "SIM-LAY-001": { "const": "Foundational services layer not exercised" },
+            "SIM-LAY-002": { "const": "Intelligence services layer not exercised" },
+            "SIM-LAY-003": { "const": "Core bundles layer not exercised" },
+            "SIM-LAY-004": { "const": "Integration targets layer not exercised" },
+            "SIM-LAY-005": { "const": "Layer dependency not satisfied" },
+            "SIM-LAY-006": { "const": "Layer execution incomplete" }
+          }
+        },
+        "contract_errors": {
+          "type": "object",
+          "description": "Contract violation error codes (SIM-CON-XXX)",
+          "properties": {
+            "SIM-CON-001": { "const": "Request contract violated" },
+            "SIM-CON-002": { "const": "Response contract violated" },
+            "SIM-CON-003": { "const": "Inter-service contract violated" },
+            "SIM-CON-004": { "const": "SLA contract violated" },
+            "SIM-CON-005": { "const": "Data contract violated" }
+          }
+        },
+        "system_errors": {
+          "type": "object",
+          "description": "System error codes (SIM-SYS-XXX)",
+          "properties": {
+            "SIM-SYS-001": { "const": "Internal system error" },
+            "SIM-SYS-002": { "const": "Configuration error" },
+            "SIM-SYS-003": { "const": "Dependency initialization failed" },
+            "SIM-SYS-500": { "const": "Unexpected internal error" }
+          }
+        },
+        "network_errors": {
+          "type": "object",
+          "description": "Network error codes (SIM-NET-XXX)",
+          "properties": {
+            "SIM-NET-001": { "const": "Network unreachable" },
+            "SIM-NET-002": { "const": "DNS resolution failed" },
+            "SIM-NET-003": { "const": "SSL/TLS error" },
+            "SIM-NET-004": { "const": "Connection reset" },
+            "SIM-NET-005": { "const": "Network partition detected" }
+          }
+        },
+        "resource_errors": {
+          "type": "object",
+          "description": "Resource error codes (SIM-RES-XXX)",
+          "properties": {
+            "SIM-RES-001": { "const": "Memory limit exceeded" },
+            "SIM-RES-002": { "const": "CPU limit exceeded" },
+            "SIM-RES-003": { "const": "Disk space exhausted" },
+            "SIM-RES-004": { "const": "File descriptor limit reached" },
+            "SIM-RES-005": { "const": "Thread pool exhausted" }
+          }
+        }
+      }
+    }
+  }
+}

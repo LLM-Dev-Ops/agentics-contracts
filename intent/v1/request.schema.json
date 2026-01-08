@@ -1,0 +1,595 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://agentics.org/schemas/intent/v1/request.schema.json",
+  "title": "Agentics Deployment Intent Request",
+  "description": "Schema for agentics-deployment-intent requests that define desired deployment states across the agentics architecture layers",
+  "type": "object",
+  "required": [
+    "intent_id",
+    "execution_id",
+    "intent_type",
+    "target",
+    "desired_state",
+    "layer_participation_requirements",
+    "validation_requirements",
+    "contract_version"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "intent_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Unique identifier for this deployment intent"
+    },
+    "execution_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Identifier linking this request to a specific execution context"
+    },
+    "intent_type": {
+      "type": "string",
+      "enum": ["deploy", "rollback", "scale", "configure", "migrate"],
+      "description": "The type of deployment intent being requested"
+    },
+    "target": {
+      "type": "object",
+      "description": "Target deployment specification",
+      "required": ["environment", "services", "regions"],
+      "additionalProperties": false,
+      "properties": {
+        "environment": {
+          "type": "string",
+          "enum": ["development", "staging", "production", "disaster-recovery"],
+          "description": "Target deployment environment"
+        },
+        "services": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": ["service_id", "name", "layer"],
+            "additionalProperties": false,
+            "properties": {
+              "service_id": {
+                "type": "string",
+                "format": "uuid",
+                "description": "Unique identifier for the service"
+              },
+              "name": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 256,
+                "description": "Human-readable service name"
+              },
+              "layer": {
+                "type": "string",
+                "enum": ["foundational", "intelligence", "core", "integration_infra"],
+                "description": "Architecture layer this service belongs to"
+              },
+              "version": {
+                "type": "string",
+                "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$",
+                "description": "Semantic version of the service to deploy"
+              }
+            }
+          },
+          "description": "Services targeted by this intent"
+        },
+        "regions": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z]{2}-[a-z]+-[0-9]+$",
+            "description": "Cloud region identifier (e.g., us-east-1, eu-west-2)"
+          },
+          "description": "Target deployment regions"
+        }
+      }
+    },
+    "desired_state": {
+      "type": "object",
+      "description": "Target configuration state for the deployment",
+      "required": ["replicas", "resource_allocation", "networking"],
+      "additionalProperties": false,
+      "properties": {
+        "replicas": {
+          "type": "object",
+          "required": ["min", "max"],
+          "additionalProperties": false,
+          "properties": {
+            "min": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Minimum number of replicas"
+            },
+            "max": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Maximum number of replicas"
+            },
+            "desired": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Desired number of replicas"
+            }
+          }
+        },
+        "resource_allocation": {
+          "type": "object",
+          "required": ["cpu", "memory"],
+          "additionalProperties": false,
+          "properties": {
+            "cpu": {
+              "type": "object",
+              "required": ["request", "limit"],
+              "additionalProperties": false,
+              "properties": {
+                "request": {
+                  "type": "string",
+                  "pattern": "^[0-9]+(\\.[0-9]+)?(m)?$",
+                  "description": "CPU request (e.g., '100m', '0.5', '2')"
+                },
+                "limit": {
+                  "type": "string",
+                  "pattern": "^[0-9]+(\\.[0-9]+)?(m)?$",
+                  "description": "CPU limit (e.g., '500m', '1', '4')"
+                }
+              }
+            },
+            "memory": {
+              "type": "object",
+              "required": ["request", "limit"],
+              "additionalProperties": false,
+              "properties": {
+                "request": {
+                  "type": "string",
+                  "pattern": "^[0-9]+(\\.[0-9]+)?(Ki|Mi|Gi|Ti)?$",
+                  "description": "Memory request (e.g., '256Mi', '1Gi')"
+                },
+                "limit": {
+                  "type": "string",
+                  "pattern": "^[0-9]+(\\.[0-9]+)?(Ki|Mi|Gi|Ti)?$",
+                  "description": "Memory limit (e.g., '512Mi', '2Gi')"
+                }
+              }
+            },
+            "storage": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "size": {
+                  "type": "string",
+                  "pattern": "^[0-9]+(\\.[0-9]+)?(Ki|Mi|Gi|Ti)?$",
+                  "description": "Storage size (e.g., '10Gi', '100Gi')"
+                },
+                "class": {
+                  "type": "string",
+                  "description": "Storage class (e.g., 'standard', 'ssd', 'premium')"
+                }
+              }
+            }
+          }
+        },
+        "networking": {
+          "type": "object",
+          "required": ["ingress_enabled"],
+          "additionalProperties": false,
+          "properties": {
+            "ingress_enabled": {
+              "type": "boolean",
+              "description": "Whether ingress is enabled for external access"
+            },
+            "load_balancer_type": {
+              "type": "string",
+              "enum": ["internal", "external", "none"],
+              "description": "Type of load balancer to provision"
+            },
+            "ports": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["port", "protocol"],
+                "additionalProperties": false,
+                "properties": {
+                  "port": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 65535,
+                    "description": "Port number"
+                  },
+                  "protocol": {
+                    "type": "string",
+                    "enum": ["TCP", "UDP", "HTTP", "HTTPS", "gRPC"],
+                    "description": "Protocol for this port"
+                  },
+                  "target_port": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 65535,
+                    "description": "Target port on the container"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "health_checks": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "liveness": {
+              "type": "object",
+              "required": ["path", "port", "interval_seconds"],
+              "additionalProperties": false,
+              "properties": {
+                "path": {
+                  "type": "string",
+                  "description": "HTTP path for liveness check"
+                },
+                "port": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 65535,
+                  "description": "Port for liveness check"
+                },
+                "interval_seconds": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "description": "Interval between checks in seconds"
+                },
+                "timeout_seconds": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "description": "Timeout for each check in seconds"
+                }
+              }
+            },
+            "readiness": {
+              "type": "object",
+              "required": ["path", "port", "interval_seconds"],
+              "additionalProperties": false,
+              "properties": {
+                "path": {
+                  "type": "string",
+                  "description": "HTTP path for readiness check"
+                },
+                "port": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 65535,
+                  "description": "Port for readiness check"
+                },
+                "interval_seconds": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "description": "Interval between checks in seconds"
+                },
+                "timeout_seconds": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "description": "Timeout for each check in seconds"
+                }
+              }
+            }
+          }
+        },
+        "environment_variables": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["name", "value_source"],
+            "additionalProperties": false,
+            "properties": {
+              "name": {
+                "type": "string",
+                "pattern": "^[A-Z][A-Z0-9_]*$",
+                "description": "Environment variable name"
+              },
+              "value_source": {
+                "type": "object",
+                "oneOf": [
+                  {
+                    "required": ["literal"],
+                    "additionalProperties": false,
+                    "properties": {
+                      "literal": {
+                        "type": "string",
+                        "description": "Literal string value"
+                      }
+                    }
+                  },
+                  {
+                    "required": ["secret_ref"],
+                    "additionalProperties": false,
+                    "properties": {
+                      "secret_ref": {
+                        "type": "object",
+                        "required": ["name", "key"],
+                        "additionalProperties": false,
+                        "properties": {
+                          "name": {
+                            "type": "string",
+                            "description": "Secret name"
+                          },
+                          "key": {
+                            "type": "string",
+                            "description": "Key within the secret"
+                          }
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "required": ["config_map_ref"],
+                    "additionalProperties": false,
+                    "properties": {
+                      "config_map_ref": {
+                        "type": "object",
+                        "required": ["name", "key"],
+                        "additionalProperties": false,
+                        "properties": {
+                          "name": {
+                            "type": "string",
+                            "description": "ConfigMap name"
+                          },
+                          "key": {
+                            "type": "string",
+                            "description": "Key within the ConfigMap"
+                          }
+                        }
+                      }
+                    }
+                  }
+                ],
+                "description": "Source of the environment variable value"
+              }
+            }
+          }
+        }
+      }
+    },
+    "layer_participation_requirements": {
+      "type": "object",
+      "description": "Requirements ensuring all architecture layers are properly wired and participating",
+      "required": ["foundational", "intelligence", "core", "integration_infra"],
+      "additionalProperties": false,
+      "properties": {
+        "foundational": {
+          "type": "object",
+          "required": ["required", "services"],
+          "additionalProperties": false,
+          "properties": {
+            "required": {
+              "type": "boolean",
+              "const": true,
+              "description": "Foundational layer participation is mandatory"
+            },
+            "services": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "string",
+                "format": "uuid",
+                "description": "Service ID from the foundational layer"
+              },
+              "description": "Services from the foundational layer that must participate"
+            },
+            "participation_mode": {
+              "type": "string",
+              "enum": ["active", "passive", "monitoring"],
+              "description": "How this layer participates in the deployment"
+            }
+          }
+        },
+        "intelligence": {
+          "type": "object",
+          "required": ["required", "services"],
+          "additionalProperties": false,
+          "properties": {
+            "required": {
+              "type": "boolean",
+              "const": true,
+              "description": "Intelligence layer participation is mandatory"
+            },
+            "services": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "string",
+                "format": "uuid",
+                "description": "Service ID from the intelligence layer"
+              },
+              "description": "Services from the intelligence layer that must participate"
+            },
+            "participation_mode": {
+              "type": "string",
+              "enum": ["active", "passive", "monitoring"],
+              "description": "How this layer participates in the deployment"
+            }
+          }
+        },
+        "core": {
+          "type": "object",
+          "required": ["required", "services"],
+          "additionalProperties": false,
+          "properties": {
+            "required": {
+              "type": "boolean",
+              "const": true,
+              "description": "Core layer participation is mandatory"
+            },
+            "services": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "string",
+                "format": "uuid",
+                "description": "Service ID from the core layer"
+              },
+              "description": "Services from the core layer that must participate"
+            },
+            "participation_mode": {
+              "type": "string",
+              "enum": ["active", "passive", "monitoring"],
+              "description": "How this layer participates in the deployment"
+            }
+          }
+        },
+        "integration_infra": {
+          "type": "object",
+          "required": ["required", "services"],
+          "additionalProperties": false,
+          "properties": {
+            "required": {
+              "type": "boolean",
+              "const": true,
+              "description": "Integration infrastructure layer participation is mandatory"
+            },
+            "services": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "string",
+                "format": "uuid",
+                "description": "Service ID from the integration infrastructure layer"
+              },
+              "description": "Services from the integration infrastructure layer that must participate"
+            },
+            "participation_mode": {
+              "type": "string",
+              "enum": ["active", "passive", "monitoring"],
+              "description": "How this layer participates in the deployment"
+            }
+          }
+        }
+      }
+    },
+    "validation_requirements": {
+      "type": "object",
+      "description": "Requirements for validation steps before deployment execution",
+      "required": ["require_simulation", "require_diligence", "require_governance_approval"],
+      "additionalProperties": false,
+      "properties": {
+        "require_simulation": {
+          "type": "boolean",
+          "description": "Whether simulation must be run before deployment"
+        },
+        "require_diligence": {
+          "type": "boolean",
+          "description": "Whether diligence checks must pass before deployment"
+        },
+        "require_governance_approval": {
+          "type": "boolean",
+          "description": "Whether governance approval is required before deployment"
+        },
+        "simulation_config": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "simulation_type": {
+              "type": "string",
+              "enum": ["dry-run", "sandbox", "canary"],
+              "description": "Type of simulation to perform"
+            },
+            "duration_minutes": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1440,
+              "description": "Duration of simulation in minutes"
+            },
+            "traffic_percentage": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 100,
+              "description": "Percentage of traffic for canary simulation"
+            }
+          }
+        },
+        "diligence_config": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "check_types": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": ["security", "compliance", "performance", "cost"]
+              },
+              "description": "Types of diligence checks to perform"
+            },
+            "severity_threshold": {
+              "type": "string",
+              "enum": ["critical", "high", "medium", "low"],
+              "description": "Minimum severity level that blocks deployment"
+            }
+          }
+        },
+        "governance_config": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "approvers_required": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Number of approvers required"
+            },
+            "approval_timeout_hours": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 168,
+              "description": "Timeout for approval in hours"
+            },
+            "auto_approve_for_environments": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": ["development", "staging"]
+              },
+              "description": "Environments that can be auto-approved"
+            }
+          }
+        }
+      }
+    },
+    "contract_version": {
+      "type": "string",
+      "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$",
+      "description": "Semantic version of the contract schema being used"
+    },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "ISO 8601 timestamp of intent creation"
+        },
+        "created_by": {
+          "type": "string",
+          "description": "Identifier of the entity that created this intent"
+        },
+        "correlation_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Correlation ID for distributed tracing"
+        },
+        "labels": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Key-value labels for categorization"
+        },
+        "annotations": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Key-value annotations for additional metadata"
+        }
+      }
+    }
+  }
+}

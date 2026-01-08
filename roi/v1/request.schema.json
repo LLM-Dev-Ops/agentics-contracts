@@ -1,0 +1,760 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://agentics.org/schemas/roi/v1/request.schema.json",
+  "title": "Enterprise ROI Engine Request",
+  "description": "Schema for enterprise-roi-engine requests that analyze return on investment across architecture layers",
+  "type": "object",
+  "required": [
+    "roi_id",
+    "execution_id",
+    "analysis_type",
+    "scope",
+    "metrics_required",
+    "layer_cost_attribution",
+    "baseline",
+    "contract_version"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "roi_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Unique identifier for this ROI analysis request"
+    },
+    "execution_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Identifier linking this request to a specific execution context"
+    },
+    "analysis_type": {
+      "type": "string",
+      "enum": ["deployment", "migration", "optimization", "comparison"],
+      "description": "Type of ROI analysis to perform"
+    },
+    "scope": {
+      "type": "object",
+      "description": "Scope of the ROI analysis",
+      "required": ["services", "layers", "time_period"],
+      "additionalProperties": false,
+      "properties": {
+        "services": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": ["service_id", "name"],
+            "additionalProperties": false,
+            "properties": {
+              "service_id": {
+                "type": "string",
+                "format": "uuid",
+                "description": "Unique identifier for the service"
+              },
+              "name": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 256,
+                "description": "Human-readable service name"
+              },
+              "layer": {
+                "type": "string",
+                "enum": ["foundational", "intelligence", "core", "integration_infra"],
+                "description": "Architecture layer this service belongs to"
+              },
+              "cost_center": {
+                "type": "string",
+                "description": "Cost center code for this service"
+              },
+              "business_unit": {
+                "type": "string",
+                "description": "Business unit owning this service"
+              }
+            }
+          },
+          "description": "Services to include in ROI analysis"
+        },
+        "layers": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "enum": ["foundational", "intelligence", "core", "integration_infra"]
+          },
+          "description": "Architecture layers to analyze"
+        },
+        "time_period": {
+          "type": "object",
+          "required": ["start", "end", "granularity"],
+          "additionalProperties": false,
+          "properties": {
+            "start": {
+              "type": "string",
+              "format": "date-time",
+              "description": "Start of the analysis period (ISO 8601)"
+            },
+            "end": {
+              "type": "string",
+              "format": "date-time",
+              "description": "End of the analysis period (ISO 8601)"
+            },
+            "granularity": {
+              "type": "string",
+              "enum": ["hourly", "daily", "weekly", "monthly", "quarterly", "yearly"],
+              "description": "Granularity for time-series data"
+            },
+            "timezone": {
+              "type": "string",
+              "pattern": "^[A-Za-z_]+/[A-Za-z_]+$",
+              "description": "Timezone for the analysis (e.g., 'America/New_York')"
+            }
+          },
+          "description": "Time period for ROI analysis"
+        },
+        "regions": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z]{2}-[a-z]+-[0-9]+$"
+          },
+          "description": "Regions to include in analysis"
+        },
+        "environments": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["development", "staging", "production", "disaster-recovery"]
+          },
+          "description": "Environments to include in analysis"
+        }
+      }
+    },
+    "metrics_required": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "enum": ["cost", "performance", "reliability", "time_to_market"]
+      },
+      "description": "Metrics to calculate in the ROI analysis"
+    },
+    "layer_cost_attribution": {
+      "type": "object",
+      "description": "Requirements for cost data from each architecture layer",
+      "required": ["foundational", "intelligence", "core", "integration_infra"],
+      "additionalProperties": false,
+      "properties": {
+        "foundational": {
+          "type": "object",
+          "description": "Cost attribution for the foundational layer",
+          "required": ["required", "services"],
+          "additionalProperties": false,
+          "properties": {
+            "required": {
+              "type": "boolean",
+              "const": true,
+              "description": "Cost data from foundational layer is mandatory"
+            },
+            "services": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "object",
+                "required": ["service_id"],
+                "additionalProperties": false,
+                "properties": {
+                  "service_id": {
+                    "type": "string",
+                    "format": "uuid",
+                    "description": "Service ID from the foundational layer"
+                  },
+                  "name": {
+                    "type": "string",
+                    "description": "Service name"
+                  },
+                  "cost_categories": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "enum": ["compute", "storage", "network", "licenses", "support", "other"]
+                    },
+                    "description": "Cost categories to track for this service"
+                  },
+                  "allocation_method": {
+                    "type": "string",
+                    "enum": ["direct", "proportional", "fixed", "usage_based"],
+                    "description": "Method for allocating shared costs"
+                  }
+                }
+              },
+              "description": "Services requiring cost attribution in this layer"
+            },
+            "cost_model": {
+              "type": "string",
+              "enum": ["actual", "amortized", "blended"],
+              "description": "Cost model to use for this layer"
+            },
+            "include_reserved": {
+              "type": "boolean",
+              "description": "Whether to include reserved instance costs"
+            },
+            "include_savings_plans": {
+              "type": "boolean",
+              "description": "Whether to include savings plan discounts"
+            }
+          }
+        },
+        "intelligence": {
+          "type": "object",
+          "description": "Cost attribution for the intelligence layer",
+          "required": ["required", "services"],
+          "additionalProperties": false,
+          "properties": {
+            "required": {
+              "type": "boolean",
+              "const": true,
+              "description": "Cost data from intelligence layer is mandatory"
+            },
+            "services": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "object",
+                "required": ["service_id"],
+                "additionalProperties": false,
+                "properties": {
+                  "service_id": {
+                    "type": "string",
+                    "format": "uuid",
+                    "description": "Service ID from the intelligence layer"
+                  },
+                  "name": {
+                    "type": "string",
+                    "description": "Service name"
+                  },
+                  "cost_categories": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "enum": ["compute", "gpu", "training", "inference", "storage", "data_transfer", "api_calls", "other"]
+                    },
+                    "description": "Cost categories to track for this service"
+                  },
+                  "allocation_method": {
+                    "type": "string",
+                    "enum": ["direct", "proportional", "fixed", "usage_based"],
+                    "description": "Method for allocating shared costs"
+                  }
+                }
+              },
+              "description": "Services requiring cost attribution in this layer"
+            },
+            "cost_model": {
+              "type": "string",
+              "enum": ["actual", "amortized", "blended"],
+              "description": "Cost model to use for this layer"
+            },
+            "include_training_costs": {
+              "type": "boolean",
+              "description": "Whether to include ML training costs"
+            },
+            "include_inference_costs": {
+              "type": "boolean",
+              "description": "Whether to include ML inference costs"
+            }
+          }
+        },
+        "core": {
+          "type": "object",
+          "description": "Cost attribution for the core layer",
+          "required": ["required", "services"],
+          "additionalProperties": false,
+          "properties": {
+            "required": {
+              "type": "boolean",
+              "const": true,
+              "description": "Cost data from core layer is mandatory"
+            },
+            "services": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "object",
+                "required": ["service_id"],
+                "additionalProperties": false,
+                "properties": {
+                  "service_id": {
+                    "type": "string",
+                    "format": "uuid",
+                    "description": "Service ID from the core layer"
+                  },
+                  "name": {
+                    "type": "string",
+                    "description": "Service name"
+                  },
+                  "cost_categories": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "enum": ["compute", "database", "cache", "queue", "storage", "third_party", "other"]
+                    },
+                    "description": "Cost categories to track for this service"
+                  },
+                  "allocation_method": {
+                    "type": "string",
+                    "enum": ["direct", "proportional", "fixed", "usage_based"],
+                    "description": "Method for allocating shared costs"
+                  }
+                }
+              },
+              "description": "Services requiring cost attribution in this layer"
+            },
+            "cost_model": {
+              "type": "string",
+              "enum": ["actual", "amortized", "blended"],
+              "description": "Cost model to use for this layer"
+            },
+            "include_database_costs": {
+              "type": "boolean",
+              "description": "Whether to include database costs"
+            },
+            "include_cache_costs": {
+              "type": "boolean",
+              "description": "Whether to include cache/in-memory costs"
+            }
+          }
+        },
+        "integration_infra": {
+          "type": "object",
+          "description": "Cost attribution for the integration infrastructure layer",
+          "required": ["required", "services"],
+          "additionalProperties": false,
+          "properties": {
+            "required": {
+              "type": "boolean",
+              "const": true,
+              "description": "Cost data from integration infrastructure layer is mandatory"
+            },
+            "services": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "object",
+                "required": ["service_id"],
+                "additionalProperties": false,
+                "properties": {
+                  "service_id": {
+                    "type": "string",
+                    "format": "uuid",
+                    "description": "Service ID from the integration infrastructure layer"
+                  },
+                  "name": {
+                    "type": "string",
+                    "description": "Service name"
+                  },
+                  "cost_categories": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "enum": ["api_gateway", "load_balancer", "cdn", "dns", "message_queue", "service_mesh", "monitoring", "logging", "other"]
+                    },
+                    "description": "Cost categories to track for this service"
+                  },
+                  "allocation_method": {
+                    "type": "string",
+                    "enum": ["direct", "proportional", "fixed", "usage_based"],
+                    "description": "Method for allocating shared costs"
+                  }
+                }
+              },
+              "description": "Services requiring cost attribution in this layer"
+            },
+            "cost_model": {
+              "type": "string",
+              "enum": ["actual", "amortized", "blended"],
+              "description": "Cost model to use for this layer"
+            },
+            "include_data_transfer": {
+              "type": "boolean",
+              "description": "Whether to include data transfer costs"
+            },
+            "include_observability": {
+              "type": "boolean",
+              "description": "Whether to include observability platform costs"
+            }
+          }
+        }
+      }
+    },
+    "baseline": {
+      "type": "object",
+      "description": "Baseline for ROI comparison",
+      "required": ["type"],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["historical", "projected", "benchmark", "custom"],
+          "description": "Type of baseline for comparison"
+        },
+        "historical": {
+          "type": "object",
+          "description": "Historical baseline configuration",
+          "additionalProperties": false,
+          "properties": {
+            "period": {
+              "type": "object",
+              "required": ["start", "end"],
+              "additionalProperties": false,
+              "properties": {
+                "start": {
+                  "type": "string",
+                  "format": "date-time",
+                  "description": "Start of historical period"
+                },
+                "end": {
+                  "type": "string",
+                  "format": "date-time",
+                  "description": "End of historical period"
+                }
+              }
+            },
+            "aggregation": {
+              "type": "string",
+              "enum": ["average", "median", "p90", "p95", "p99", "max", "min"],
+              "description": "Aggregation method for historical data"
+            }
+          }
+        },
+        "projected": {
+          "type": "object",
+          "description": "Projected baseline configuration",
+          "additionalProperties": false,
+          "properties": {
+            "growth_rate": {
+              "type": "number",
+              "minimum": -100,
+              "maximum": 1000,
+              "description": "Expected growth rate percentage"
+            },
+            "projection_model": {
+              "type": "string",
+              "enum": ["linear", "exponential", "seasonal", "custom"],
+              "description": "Model for projecting baseline"
+            },
+            "confidence_level": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 100,
+              "description": "Confidence level for projections"
+            }
+          }
+        },
+        "benchmark": {
+          "type": "object",
+          "description": "Industry benchmark baseline",
+          "additionalProperties": false,
+          "properties": {
+            "benchmark_id": {
+              "type": "string",
+              "description": "Identifier for the benchmark dataset"
+            },
+            "industry": {
+              "type": "string",
+              "description": "Industry vertical for benchmarking"
+            },
+            "company_size": {
+              "type": "string",
+              "enum": ["startup", "small", "medium", "large", "enterprise"],
+              "description": "Company size category for benchmarking"
+            },
+            "percentile_target": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 99,
+              "description": "Target percentile in the benchmark"
+            }
+          }
+        },
+        "custom": {
+          "type": "object",
+          "description": "Custom baseline values",
+          "additionalProperties": false,
+          "properties": {
+            "cost_baseline": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "amount": {
+                  "type": "number",
+                  "minimum": 0,
+                  "description": "Baseline cost amount"
+                },
+                "currency": {
+                  "type": "string",
+                  "pattern": "^[A-Z]{3}$",
+                  "description": "ISO 4217 currency code"
+                },
+                "period": {
+                  "type": "string",
+                  "enum": ["hourly", "daily", "monthly", "yearly"],
+                  "description": "Cost period"
+                }
+              }
+            },
+            "performance_baseline": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "latency_p99_ms": {
+                  "type": "number",
+                  "minimum": 0,
+                  "description": "P99 latency baseline in milliseconds"
+                },
+                "throughput_rps": {
+                  "type": "number",
+                  "minimum": 0,
+                  "description": "Throughput baseline in requests per second"
+                },
+                "error_rate_percent": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 100,
+                  "description": "Error rate baseline percentage"
+                }
+              }
+            },
+            "reliability_baseline": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "availability_percent": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 100,
+                  "description": "Availability baseline percentage"
+                },
+                "mttr_minutes": {
+                  "type": "number",
+                  "minimum": 0,
+                  "description": "Mean time to recovery in minutes"
+                },
+                "mtbf_hours": {
+                  "type": "number",
+                  "minimum": 0,
+                  "description": "Mean time between failures in hours"
+                }
+              }
+            },
+            "time_to_market_baseline": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "deployment_frequency_per_day": {
+                  "type": "number",
+                  "minimum": 0,
+                  "description": "Deployment frequency per day"
+                },
+                "lead_time_hours": {
+                  "type": "number",
+                  "minimum": 0,
+                  "description": "Lead time from commit to production in hours"
+                },
+                "change_failure_rate_percent": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 100,
+                  "description": "Change failure rate percentage"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "contract_version": {
+      "type": "string",
+      "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$",
+      "description": "Semantic version of the contract schema being used"
+    },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "ISO 8601 timestamp of request creation"
+        },
+        "created_by": {
+          "type": "string",
+          "description": "Identifier of the entity that created this request"
+        },
+        "correlation_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Correlation ID for distributed tracing"
+        },
+        "business_context": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "initiative_id": {
+              "type": "string",
+              "description": "Related business initiative identifier"
+            },
+            "project_code": {
+              "type": "string",
+              "description": "Project code for cost allocation"
+            },
+            "stakeholders": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "Stakeholder identifiers for this analysis"
+            }
+          }
+        },
+        "labels": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Key-value labels for categorization"
+        },
+        "annotations": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Key-value annotations for additional metadata"
+        }
+      }
+    },
+    "options": {
+      "type": "object",
+      "description": "ROI analysis options",
+      "additionalProperties": false,
+      "properties": {
+        "currency": {
+          "type": "string",
+          "pattern": "^[A-Z]{3}$",
+          "default": "USD",
+          "description": "ISO 4217 currency code for monetary values"
+        },
+        "include_projections": {
+          "type": "boolean",
+          "description": "Whether to include future projections"
+        },
+        "projection_periods": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 60,
+          "description": "Number of periods to project forward"
+        },
+        "sensitivity_analysis": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "description": "Whether to perform sensitivity analysis"
+            },
+            "variables": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": ["cost", "growth_rate", "utilization", "performance"]
+              },
+              "description": "Variables to analyze for sensitivity"
+            },
+            "variance_percent": {
+              "type": "number",
+              "minimum": 1,
+              "maximum": 100,
+              "description": "Variance percentage for sensitivity analysis"
+            }
+          }
+        },
+        "reporting": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "format": {
+              "type": "string",
+              "enum": ["json", "pdf", "excel", "powerpoint"],
+              "description": "Report output format"
+            },
+            "include_charts": {
+              "type": "boolean",
+              "description": "Whether to include visualization charts"
+            },
+            "include_recommendations": {
+              "type": "boolean",
+              "description": "Whether to include optimization recommendations"
+            },
+            "executive_summary": {
+              "type": "boolean",
+              "description": "Whether to include an executive summary"
+            },
+            "detail_level": {
+              "type": "string",
+              "enum": ["summary", "detailed", "comprehensive"],
+              "description": "Level of detail in the report"
+            }
+          }
+        },
+        "scheduling": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "recurring": {
+              "type": "boolean",
+              "description": "Whether this is a recurring analysis"
+            },
+            "cron_expression": {
+              "type": "string",
+              "pattern": "^(@(annually|yearly|monthly|weekly|daily|hourly))|((\\*|([0-9]|1[0-9]|2[0-9]|3[0-9]|4[0-9]|5[0-9])|\\*\\/([0-9]|1[0-9]|2[0-9]|3[0-9]|4[0-9]|5[0-9])) (\\*|([0-9]|1[0-9]|2[0-3])|\\*\\/([0-9]|1[0-9]|2[0-3])) (\\*|([1-9]|1[0-9]|2[0-9]|3[0-1])|\\*\\/([1-9]|1[0-9]|2[0-9]|3[0-1])) (\\*|([1-9]|1[0-2])|\\*\\/([1-9]|1[0-2])) (\\*|([0-6])|\\*\\/([0-6])))$",
+              "description": "Cron expression for recurring analysis"
+            },
+            "notification_recipients": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "format": "email"
+              },
+              "description": "Email recipients for scheduled reports"
+            }
+          }
+        }
+      }
+    },
+    "thresholds": {
+      "type": "object",
+      "description": "Thresholds for ROI analysis alerts",
+      "additionalProperties": false,
+      "properties": {
+        "cost_increase_percent": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Alert threshold for cost increase percentage"
+        },
+        "roi_minimum_percent": {
+          "type": "number",
+          "description": "Minimum acceptable ROI percentage"
+        },
+        "payback_period_months": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Maximum acceptable payback period in months"
+        },
+        "performance_degradation_percent": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100,
+          "description": "Alert threshold for performance degradation"
+        }
+      }
+    }
+  }
+}

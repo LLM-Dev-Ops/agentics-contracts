@@ -1,0 +1,620 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://agentics.org/schemas/simulation/v1/request.schema.json",
+  "title": "Simulation Request",
+  "description": "Request schema for agentics-simulation-engine and agentics-simulator-runner. Defines simulation parameters, targets, and layer requirements for comprehensive system testing.",
+  "type": "object",
+  "required": [
+    "simulation_id",
+    "execution_id",
+    "simulation_type",
+    "target",
+    "parameters",
+    "constraints",
+    "layer_requirements",
+    "contract_version"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "simulation_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Unique identifier for this simulation request"
+    },
+    "execution_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Links to the execution graph tracking this simulation's execution flow"
+    },
+    "simulation_type": {
+      "type": "string",
+      "enum": ["deployment", "load", "chaos", "integration", "e2e"],
+      "description": "Type of simulation to execute: deployment (infrastructure provisioning), load (performance/stress testing), chaos (fault injection), integration (component interaction), e2e (end-to-end user flows)"
+    },
+    "target": {
+      "type": "object",
+      "description": "Specifies the environment, services, and layers targeted by this simulation",
+      "required": ["environment", "services", "layers_to_exercise"],
+      "additionalProperties": false,
+      "properties": {
+        "environment": {
+          "type": "string",
+          "enum": ["development", "staging", "production", "sandbox", "ci"],
+          "description": "Target environment for simulation execution"
+        },
+        "services": {
+          "type": "array",
+          "description": "Array of service identifiers to include in the simulation",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": ["service_id", "service_name", "version"],
+            "additionalProperties": false,
+            "properties": {
+              "service_id": {
+                "type": "string",
+                "format": "uuid",
+                "description": "Unique identifier of the service"
+              },
+              "service_name": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 256,
+                "description": "Human-readable service name"
+              },
+              "version": {
+                "type": "string",
+                "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$",
+                "description": "Semantic version of the service"
+              },
+              "endpoint": {
+                "type": "string",
+                "format": "uri",
+                "description": "Optional service endpoint URL"
+              }
+            }
+          }
+        },
+        "layers_to_exercise": {
+          "type": "array",
+          "description": "All architectural layers that must be exercised during simulation. All layers must be included for comprehensive testing.",
+          "minItems": 4,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "enum": [
+              "foundational_services",
+              "intelligence_services",
+              "core_bundles",
+              "integration_targets"
+            ]
+          },
+          "contains": {
+            "const": "foundational_services"
+          },
+          "allOf": [
+            {
+              "contains": { "const": "foundational_services" }
+            },
+            {
+              "contains": { "const": "intelligence_services" }
+            },
+            {
+              "contains": { "const": "core_bundles" }
+            },
+            {
+              "contains": { "const": "integration_targets" }
+            }
+          ]
+        }
+      }
+    },
+    "parameters": {
+      "type": "object",
+      "description": "Simulation-specific configuration parameters",
+      "additionalProperties": true,
+      "properties": {
+        "seed": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Random seed for reproducible simulations"
+        },
+        "scenario_count": {
+          "type": "integer",
+          "minimum": 1,
+          "default": 1,
+          "description": "Number of scenarios to execute"
+        },
+        "warm_up_duration_seconds": {
+          "type": "integer",
+          "minimum": 0,
+          "default": 0,
+          "description": "Warm-up period before measurements begin"
+        },
+        "cool_down_duration_seconds": {
+          "type": "integer",
+          "minimum": 0,
+          "default": 0,
+          "description": "Cool-down period after simulation completes"
+        },
+        "load_profile": {
+          "type": "object",
+          "description": "Configuration for load simulation type",
+          "properties": {
+            "ramp_up_seconds": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Time to ramp up to target load"
+            },
+            "steady_state_seconds": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Duration to maintain target load"
+            },
+            "ramp_down_seconds": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Time to ramp down from target load"
+            },
+            "target_rps": {
+              "type": "number",
+              "minimum": 0.1,
+              "description": "Target requests per second"
+            },
+            "concurrent_users": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Number of concurrent simulated users"
+            }
+          }
+        },
+        "chaos_config": {
+          "type": "object",
+          "description": "Configuration for chaos simulation type",
+          "properties": {
+            "fault_types": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "network_latency",
+                  "network_partition",
+                  "service_failure",
+                  "resource_exhaustion",
+                  "data_corruption",
+                  "clock_skew",
+                  "dns_failure"
+                ]
+              },
+              "description": "Types of faults to inject"
+            },
+            "fault_probability": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1,
+              "description": "Probability of fault injection per operation"
+            },
+            "blast_radius": {
+              "type": "string",
+              "enum": ["single_service", "service_group", "layer", "all"],
+              "description": "Scope of chaos injection"
+            }
+          }
+        },
+        "deployment_config": {
+          "type": "object",
+          "description": "Configuration for deployment simulation type",
+          "properties": {
+            "strategy": {
+              "type": "string",
+              "enum": ["rolling", "blue_green", "canary", "recreate"],
+              "description": "Deployment strategy to simulate"
+            },
+            "rollback_on_failure": {
+              "type": "boolean",
+              "default": true,
+              "description": "Whether to rollback on simulation failure"
+            },
+            "health_check_interval_seconds": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Interval between health checks"
+            }
+          }
+        },
+        "integration_config": {
+          "type": "object",
+          "description": "Configuration for integration simulation type",
+          "properties": {
+            "test_data_set": {
+              "type": "string",
+              "description": "Identifier for test data set to use"
+            },
+            "mock_external_services": {
+              "type": "boolean",
+              "default": false,
+              "description": "Whether to mock external service dependencies"
+            },
+            "validate_contracts": {
+              "type": "boolean",
+              "default": true,
+              "description": "Whether to validate inter-service contracts"
+            }
+          }
+        },
+        "e2e_config": {
+          "type": "object",
+          "description": "Configuration for end-to-end simulation type",
+          "properties": {
+            "user_journeys": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "Identifiers of user journeys to execute"
+            },
+            "browser_type": {
+              "type": "string",
+              "enum": ["chromium", "firefox", "webkit"],
+              "description": "Browser type for UI simulations"
+            },
+            "screenshot_on_failure": {
+              "type": "boolean",
+              "default": true,
+              "description": "Capture screenshots on test failure"
+            }
+          }
+        },
+        "custom_parameters": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "Additional custom parameters for specific simulation requirements"
+        }
+      }
+    },
+    "constraints": {
+      "type": "object",
+      "description": "Execution constraints and success criteria",
+      "required": [
+        "max_duration_seconds",
+        "max_parallel_executions",
+        "required_success_rate"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "max_duration_seconds": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 86400,
+          "description": "Maximum allowed duration for the entire simulation in seconds (max 24 hours)"
+        },
+        "max_parallel_executions": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1000,
+          "description": "Maximum number of parallel scenario executions"
+        },
+        "required_success_rate": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100,
+          "description": "Minimum success rate percentage required for simulation to pass"
+        },
+        "max_memory_mb": {
+          "type": "integer",
+          "minimum": 128,
+          "description": "Maximum memory allocation in megabytes"
+        },
+        "max_cpu_cores": {
+          "type": "number",
+          "minimum": 0.1,
+          "description": "Maximum CPU cores to utilize"
+        },
+        "timeout_per_scenario_seconds": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Timeout for individual scenario execution"
+        },
+        "fail_fast": {
+          "type": "boolean",
+          "default": false,
+          "description": "Stop simulation immediately on first failure"
+        },
+        "retry_failed_scenarios": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 5,
+          "default": 0,
+          "description": "Number of times to retry failed scenarios"
+        }
+      }
+    },
+    "layer_requirements": {
+      "type": "object",
+      "description": "Proof requirements that each architectural layer will be exercised. All layers must have at least one service specified.",
+      "required": [
+        "foundational_services",
+        "intelligence_services",
+        "core_bundles",
+        "integration_targets"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "foundational_services": {
+          "type": "array",
+          "description": "Foundational services layer components to exercise (logging, telemetry, storage, compute)",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": ["service_id", "service_name", "expected_operations"],
+            "additionalProperties": false,
+            "properties": {
+              "service_id": {
+                "type": "string",
+                "format": "uuid",
+                "description": "Unique identifier of the foundational service"
+              },
+              "service_name": {
+                "type": "string",
+                "minLength": 1,
+                "description": "Name of the foundational service"
+              },
+              "service_type": {
+                "type": "string",
+                "enum": [
+                  "logging",
+                  "telemetry",
+                  "storage",
+                  "compute",
+                  "messaging",
+                  "caching",
+                  "security",
+                  "networking"
+                ],
+                "description": "Category of foundational service"
+              },
+              "expected_operations": {
+                "type": "array",
+                "minItems": 1,
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "description": "Operations that will be exercised on this service"
+              },
+              "criticality": {
+                "type": "string",
+                "enum": ["critical", "high", "medium", "low"],
+                "default": "high",
+                "description": "Criticality level of this service for the simulation"
+              }
+            }
+          }
+        },
+        "intelligence_services": {
+          "type": "array",
+          "description": "Intelligence services layer components to exercise (AI/ML, reasoning, planning)",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": ["service_id", "service_name", "expected_operations"],
+            "additionalProperties": false,
+            "properties": {
+              "service_id": {
+                "type": "string",
+                "format": "uuid",
+                "description": "Unique identifier of the intelligence service"
+              },
+              "service_name": {
+                "type": "string",
+                "minLength": 1,
+                "description": "Name of the intelligence service"
+              },
+              "service_type": {
+                "type": "string",
+                "enum": [
+                  "llm",
+                  "embedding",
+                  "classification",
+                  "reasoning",
+                  "planning",
+                  "memory",
+                  "retrieval",
+                  "generation"
+                ],
+                "description": "Category of intelligence service"
+              },
+              "expected_operations": {
+                "type": "array",
+                "minItems": 1,
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "description": "Operations that will be exercised on this service"
+              },
+              "model_identifier": {
+                "type": "string",
+                "description": "Identifier of the AI model if applicable"
+              },
+              "criticality": {
+                "type": "string",
+                "enum": ["critical", "high", "medium", "low"],
+                "default": "high",
+                "description": "Criticality level of this service for the simulation"
+              }
+            }
+          }
+        },
+        "core_bundles": {
+          "type": "array",
+          "description": "Core bundles layer components to exercise (business logic, workflows, orchestration)",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": ["bundle_id", "bundle_name", "expected_operations"],
+            "additionalProperties": false,
+            "properties": {
+              "bundle_id": {
+                "type": "string",
+                "format": "uuid",
+                "description": "Unique identifier of the core bundle"
+              },
+              "bundle_name": {
+                "type": "string",
+                "minLength": 1,
+                "description": "Name of the core bundle"
+              },
+              "bundle_type": {
+                "type": "string",
+                "enum": [
+                  "workflow",
+                  "orchestration",
+                  "business_logic",
+                  "data_processing",
+                  "event_handling",
+                  "scheduling"
+                ],
+                "description": "Category of core bundle"
+              },
+              "expected_operations": {
+                "type": "array",
+                "minItems": 1,
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "description": "Operations that will be exercised on this bundle"
+              },
+              "dependencies": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "description": "Bundle IDs this bundle depends on"
+              },
+              "criticality": {
+                "type": "string",
+                "enum": ["critical", "high", "medium", "low"],
+                "default": "high",
+                "description": "Criticality level of this bundle for the simulation"
+              }
+            }
+          }
+        },
+        "integration_targets": {
+          "type": "array",
+          "description": "Integration targets layer components to exercise (external APIs, third-party services)",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": ["target_id", "target_name", "expected_operations"],
+            "additionalProperties": false,
+            "properties": {
+              "target_id": {
+                "type": "string",
+                "format": "uuid",
+                "description": "Unique identifier of the integration target"
+              },
+              "target_name": {
+                "type": "string",
+                "minLength": 1,
+                "description": "Name of the integration target"
+              },
+              "target_type": {
+                "type": "string",
+                "enum": [
+                  "rest_api",
+                  "graphql_api",
+                  "grpc_service",
+                  "message_queue",
+                  "database",
+                  "file_system",
+                  "external_saas",
+                  "webhook"
+                ],
+                "description": "Category of integration target"
+              },
+              "expected_operations": {
+                "type": "array",
+                "minItems": 1,
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "description": "Operations that will be exercised on this target"
+              },
+              "endpoint": {
+                "type": "string",
+                "format": "uri",
+                "description": "Endpoint URL of the integration target"
+              },
+              "authentication_required": {
+                "type": "boolean",
+                "default": true,
+                "description": "Whether authentication is required for this target"
+              },
+              "mock_available": {
+                "type": "boolean",
+                "default": false,
+                "description": "Whether a mock implementation is available"
+              },
+              "criticality": {
+                "type": "string",
+                "enum": ["critical", "high", "medium", "low"],
+                "default": "medium",
+                "description": "Criticality level of this target for the simulation"
+              }
+            }
+          }
+        }
+      }
+    },
+    "contract_version": {
+      "type": "string",
+      "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$",
+      "description": "Semantic version of the contract this request conforms to"
+    },
+    "metadata": {
+      "type": "object",
+      "description": "Optional metadata for the simulation request",
+      "additionalProperties": true,
+      "properties": {
+        "requested_by": {
+          "type": "string",
+          "description": "Identifier of the user or system that requested the simulation"
+        },
+        "request_timestamp": {
+          "type": "string",
+          "format": "date-time",
+          "description": "ISO8601 timestamp when the request was created"
+        },
+        "priority": {
+          "type": "string",
+          "enum": ["critical", "high", "normal", "low"],
+          "default": "normal",
+          "description": "Priority level for scheduling"
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "description": "Tags for categorization and filtering"
+        },
+        "correlation_id": {
+          "type": "string",
+          "description": "Correlation ID for distributed tracing"
+        },
+        "parent_simulation_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Parent simulation ID if this is a child/retry simulation"
+        }
+      }
+    }
+  }
+}

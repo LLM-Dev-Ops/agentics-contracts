@@ -1,0 +1,55 @@
+{
+  "name": "@agentics/contracts",
+  "version": "1.0.0",
+  "description": "Authoritative, enforceable contract layer for the Agentics platform",
+  "main": "index.js",
+  "types": "index.d.ts",
+  "files": [
+    "execution/",
+    "simulation/",
+    "intent/",
+    "exporters/",
+    "diligence/",
+    "roi/",
+    "governance/",
+    "index.js",
+    "index.d.ts"
+  ],
+  "exports": {
+    ".": "./index.js",
+    "./execution/v1/*": "./execution/v1/*.schema.json",
+    "./simulation/v1/*": "./simulation/v1/*.schema.json",
+    "./intent/v1/*": "./intent/v1/*.schema.json",
+    "./exporters/v1/*": "./exporters/v1/*.schema.json",
+    "./diligence/v1/*": "./diligence/v1/*.schema.json",
+    "./roi/v1/*": "./roi/v1/*.schema.json",
+    "./governance/v1/*": "./governance/v1/*.schema.json"
+  },
+  "scripts": {
+    "validate": "ajv compile -s 'execution/**/*.schema.json' -s 'simulation/**/*.schema.json' -s 'intent/**/*.schema.json' -s 'exporters/**/*.schema.json' -s 'diligence/**/*.schema.json' -s 'roi/**/*.schema.json' -s 'governance/**/*.schema.json'",
+    "test": "npm run validate",
+    "prepublishOnly": "npm run validate"
+  },
+  "keywords": [
+    "agentics",
+    "contracts",
+    "json-schema",
+    "validation",
+    "llm",
+    "platform"
+  ],
+  "author": "Agentics Platform Team",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/agentics/agentics-contracts.git"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "devDependencies": {
+    "ajv": "^8.12.0",
+    "ajv-cli": "^5.0.0",
+    "ajv-formats": "^2.1.1"
+  }
+}

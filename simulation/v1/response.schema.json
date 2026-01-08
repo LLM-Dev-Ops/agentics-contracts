@@ -1,0 +1,914 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://agentics.org/schemas/simulation/v1/response.schema.json",
+  "title": "Simulation Response",
+  "description": "Response schema proving simulation execution. Contains mandatory layer execution proof demonstrating all architectural layers were exercised.",
+  "type": "object",
+  "required": [
+    "simulation_id",
+    "execution_id",
+    "execution_graph",
+    "status",
+    "results",
+    "layer_execution_proof",
+    "telemetry",
+    "duration_ms",
+    "contract_violations"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "simulation_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Unique identifier matching the simulation request"
+    },
+    "execution_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Execution graph identifier linking to the complete execution trace"
+    },
+    "execution_graph": {
+      "type": "object",
+      "description": "Execution graph data showing the simulation execution flow. Can reference external schema or contain embedded graph.",
+      "required": ["graph_id", "root_node_id", "nodes", "edges", "created_at"],
+      "additionalProperties": false,
+      "properties": {
+        "graph_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Unique identifier for this execution graph"
+        },
+        "graph_version": {
+          "type": "string",
+          "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)$",
+          "description": "Version of the execution graph schema"
+        },
+        "root_node_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Entry point node of the execution graph"
+        },
+        "nodes": {
+          "type": "array",
+          "description": "All execution nodes in the graph",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": ["node_id", "node_type", "status", "started_at"],
+            "additionalProperties": false,
+            "properties": {
+              "node_id": {
+                "type": "string",
+                "format": "uuid",
+                "description": "Unique identifier for this node"
+              },
+              "node_type": {
+                "type": "string",
+                "enum": [
+                  "scenario",
+                  "step",
+                  "assertion",
+                  "setup",
+                  "teardown",
+                  "checkpoint",
+                  "fork",
+                  "join",
+                  "retry"
+                ],
+                "description": "Type of execution node"
+              },
+              "name": {
+                "type": "string",
+                "description": "Human-readable name of the node"
+              },
+              "status": {
+                "type": "string",
+                "enum": ["pending", "running", "completed", "failed", "skipped", "cancelled"],
+                "description": "Current status of the node"
+              },
+              "started_at": {
+                "type": "string",
+                "format": "date-time",
+                "description": "ISO8601 timestamp when node execution started"
+              },
+              "completed_at": {
+                "type": "string",
+                "format": "date-time",
+                "description": "ISO8601 timestamp when node execution completed"
+              },
+              "duration_ms": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Duration of node execution in milliseconds"
+              },
+              "layer": {
+                "type": "string",
+                "enum": [
+                  "foundational_services",
+                  "intelligence_services",
+                  "core_bundles",
+                  "integration_targets"
+                ],
+                "description": "Architectural layer this node belongs to"
+              },
+              "service_id": {
+                "type": "string",
+                "format": "uuid",
+                "description": "Service identifier if applicable"
+              },
+              "input": {
+                "type": "object",
+                "additionalProperties": true,
+                "description": "Input data for this node"
+              },
+              "output": {
+                "type": "object",
+                "additionalProperties": true,
+                "description": "Output data from this node"
+              },
+              "error": {
+                "type": "object",
+                "description": "Error information if node failed",
+                "properties": {
+                  "code": {
+                    "type": "string"
+                  },
+                  "message": {
+                    "type": "string"
+                  },
+                  "details": {
+                    "type": "object",
+                    "additionalProperties": true
+                  }
+                }
+              },
+              "metadata": {
+                "type": "object",
+                "additionalProperties": true,
+                "description": "Additional node metadata"
+              }
+            }
+          }
+        },
+        "edges": {
+          "type": "array",
+          "description": "Connections between execution nodes",
+          "items": {
+            "type": "object",
+            "required": ["source_node_id", "target_node_id"],
+            "additionalProperties": false,
+            "properties": {
+              "edge_id": {
+                "type": "string",
+                "format": "uuid",
+                "description": "Unique identifier for this edge"
+              },
+              "source_node_id": {
+                "type": "string",
+                "format": "uuid",
+                "description": "Source node identifier"
+              },
+              "target_node_id": {
+                "type": "string",
+                "format": "uuid",
+                "description": "Target node identifier"
+              },
+              "edge_type": {
+                "type": "string",
+                "enum": ["sequential", "conditional", "parallel", "error_handler", "retry"],
+                "default": "sequential",
+                "description": "Type of edge connection"
+              },
+              "condition": {
+                "type": "string",
+                "description": "Condition expression for conditional edges"
+              }
+            }
+          }
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "ISO8601 timestamp when graph was created"
+        },
+        "completed_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "ISO8601 timestamp when graph execution completed"
+        }
+      }
+    },
+    "status": {
+      "type": "string",
+      "enum": ["completed", "failed", "timeout", "cancelled"],
+      "description": "Final status of the simulation execution"
+    },
+    "results": {
+      "type": "object",
+      "description": "Aggregated simulation results",
+      "required": ["total_scenarios", "passed", "failed", "success_rate"],
+      "additionalProperties": false,
+      "properties": {
+        "total_scenarios": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Total number of scenarios executed"
+        },
+        "passed": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of scenarios that passed"
+        },
+        "failed": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of scenarios that failed"
+        },
+        "skipped": {
+          "type": "integer",
+          "minimum": 0,
+          "default": 0,
+          "description": "Number of scenarios that were skipped"
+        },
+        "success_rate": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100,
+          "description": "Percentage of scenarios that passed"
+        },
+        "scenario_results": {
+          "type": "array",
+          "description": "Detailed results for each scenario",
+          "items": {
+            "type": "object",
+            "required": ["scenario_id", "scenario_name", "status", "duration_ms"],
+            "additionalProperties": false,
+            "properties": {
+              "scenario_id": {
+                "type": "string",
+                "format": "uuid",
+                "description": "Unique identifier for the scenario"
+              },
+              "scenario_name": {
+                "type": "string",
+                "description": "Human-readable scenario name"
+              },
+              "status": {
+                "type": "string",
+                "enum": ["passed", "failed", "skipped", "error"],
+                "description": "Scenario execution status"
+              },
+              "duration_ms": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Scenario execution duration in milliseconds"
+              },
+              "assertions_passed": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Number of assertions that passed"
+              },
+              "assertions_failed": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Number of assertions that failed"
+              },
+              "failure_reason": {
+                "type": "string",
+                "description": "Reason for failure if applicable"
+              },
+              "retry_count": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Number of retry attempts"
+              }
+            }
+          }
+        },
+        "performance_metrics": {
+          "type": "object",
+          "description": "Performance metrics collected during simulation",
+          "additionalProperties": false,
+          "properties": {
+            "avg_response_time_ms": {
+              "type": "number",
+              "minimum": 0,
+              "description": "Average response time in milliseconds"
+            },
+            "p50_response_time_ms": {
+              "type": "number",
+              "minimum": 0,
+              "description": "50th percentile response time"
+            },
+            "p90_response_time_ms": {
+              "type": "number",
+              "minimum": 0,
+              "description": "90th percentile response time"
+            },
+            "p95_response_time_ms": {
+              "type": "number",
+              "minimum": 0,
+              "description": "95th percentile response time"
+            },
+            "p99_response_time_ms": {
+              "type": "number",
+              "minimum": 0,
+              "description": "99th percentile response time"
+            },
+            "max_response_time_ms": {
+              "type": "number",
+              "minimum": 0,
+              "description": "Maximum response time observed"
+            },
+            "min_response_time_ms": {
+              "type": "number",
+              "minimum": 0,
+              "description": "Minimum response time observed"
+            },
+            "throughput_rps": {
+              "type": "number",
+              "minimum": 0,
+              "description": "Requests per second throughput"
+            },
+            "error_rate": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 100,
+              "description": "Error rate percentage"
+            },
+            "peak_memory_mb": {
+              "type": "number",
+              "minimum": 0,
+              "description": "Peak memory usage in megabytes"
+            },
+            "peak_cpu_percent": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 100,
+              "description": "Peak CPU utilization percentage"
+            }
+          }
+        }
+      }
+    },
+    "layer_execution_proof": {
+      "type": "object",
+      "description": "MANDATORY proof that all architectural layers were exercised. Response is INVALID if any layer array is empty.",
+      "required": [
+        "foundational_services",
+        "intelligence_services",
+        "core_bundles",
+        "integration_targets"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "foundational_services": {
+          "type": "array",
+          "description": "Proof of foundational services layer execution. Must not be empty.",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": ["service_id", "service_name", "executed_at", "outcome"],
+            "additionalProperties": false,
+            "properties": {
+              "service_id": {
+                "type": "string",
+                "format": "uuid",
+                "description": "Unique identifier of the executed service"
+              },
+              "service_name": {
+                "type": "string",
+                "minLength": 1,
+                "description": "Name of the executed service"
+              },
+              "executed_at": {
+                "type": "string",
+                "format": "date-time",
+                "description": "ISO8601 timestamp when the service was executed"
+              },
+              "outcome": {
+                "type": "string",
+                "enum": ["success", "failure", "partial", "skipped"],
+                "description": "Outcome of the service execution"
+              },
+              "operations_executed": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": ["operation_name", "executed_at", "success"],
+                  "properties": {
+                    "operation_name": {
+                      "type": "string",
+                      "description": "Name of the operation executed"
+                    },
+                    "executed_at": {
+                      "type": "string",
+                      "format": "date-time",
+                      "description": "When the operation was executed"
+                    },
+                    "success": {
+                      "type": "boolean",
+                      "description": "Whether the operation succeeded"
+                    },
+                    "duration_ms": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "description": "Operation duration in milliseconds"
+                    },
+                    "error_message": {
+                      "type": "string",
+                      "description": "Error message if operation failed"
+                    }
+                  }
+                },
+                "description": "List of operations executed on this service"
+              },
+              "duration_ms": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Total duration of service execution in milliseconds"
+              },
+              "node_ids": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "description": "Execution graph node IDs associated with this service"
+              }
+            }
+          }
+        },
+        "intelligence_services": {
+          "type": "array",
+          "description": "Proof of intelligence services layer execution. Must not be empty.",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": ["service_id", "service_name", "executed_at", "outcome"],
+            "additionalProperties": false,
+            "properties": {
+              "service_id": {
+                "type": "string",
+                "format": "uuid",
+                "description": "Unique identifier of the executed service"
+              },
+              "service_name": {
+                "type": "string",
+                "minLength": 1,
+                "description": "Name of the executed service"
+              },
+              "executed_at": {
+                "type": "string",
+                "format": "date-time",
+                "description": "ISO8601 timestamp when the service was executed"
+              },
+              "outcome": {
+                "type": "string",
+                "enum": ["success", "failure", "partial", "skipped"],
+                "description": "Outcome of the service execution"
+              },
+              "operations_executed": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": ["operation_name", "executed_at", "success"],
+                  "properties": {
+                    "operation_name": {
+                      "type": "string",
+                      "description": "Name of the operation executed"
+                    },
+                    "executed_at": {
+                      "type": "string",
+                      "format": "date-time",
+                      "description": "When the operation was executed"
+                    },
+                    "success": {
+                      "type": "boolean",
+                      "description": "Whether the operation succeeded"
+                    },
+                    "duration_ms": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "description": "Operation duration in milliseconds"
+                    },
+                    "error_message": {
+                      "type": "string",
+                      "description": "Error message if operation failed"
+                    }
+                  }
+                },
+                "description": "List of operations executed on this service"
+              },
+              "model_identifier": {
+                "type": "string",
+                "description": "AI model identifier if applicable"
+              },
+              "tokens_consumed": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Number of tokens consumed by AI operations"
+              },
+              "duration_ms": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Total duration of service execution in milliseconds"
+              },
+              "node_ids": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "description": "Execution graph node IDs associated with this service"
+              }
+            }
+          }
+        },
+        "core_bundles": {
+          "type": "array",
+          "description": "Proof of core bundles layer execution. Must not be empty.",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": ["bundle_id", "bundle_name", "executed_at", "outcome"],
+            "additionalProperties": false,
+            "properties": {
+              "bundle_id": {
+                "type": "string",
+                "format": "uuid",
+                "description": "Unique identifier of the executed bundle"
+              },
+              "bundle_name": {
+                "type": "string",
+                "minLength": 1,
+                "description": "Name of the executed bundle"
+              },
+              "executed_at": {
+                "type": "string",
+                "format": "date-time",
+                "description": "ISO8601 timestamp when the bundle was executed"
+              },
+              "outcome": {
+                "type": "string",
+                "enum": ["success", "failure", "partial", "skipped"],
+                "description": "Outcome of the bundle execution"
+              },
+              "operations_executed": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": ["operation_name", "executed_at", "success"],
+                  "properties": {
+                    "operation_name": {
+                      "type": "string",
+                      "description": "Name of the operation executed"
+                    },
+                    "executed_at": {
+                      "type": "string",
+                      "format": "date-time",
+                      "description": "When the operation was executed"
+                    },
+                    "success": {
+                      "type": "boolean",
+                      "description": "Whether the operation succeeded"
+                    },
+                    "duration_ms": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "description": "Operation duration in milliseconds"
+                    },
+                    "error_message": {
+                      "type": "string",
+                      "description": "Error message if operation failed"
+                    }
+                  }
+                },
+                "description": "List of operations executed on this bundle"
+              },
+              "workflow_steps_completed": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Number of workflow steps completed"
+              },
+              "duration_ms": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Total duration of bundle execution in milliseconds"
+              },
+              "node_ids": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "description": "Execution graph node IDs associated with this bundle"
+              }
+            }
+          }
+        },
+        "integration_targets": {
+          "type": "array",
+          "description": "Proof of integration targets layer execution. Must not be empty.",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": ["target_id", "target_name", "executed_at", "outcome"],
+            "additionalProperties": false,
+            "properties": {
+              "target_id": {
+                "type": "string",
+                "format": "uuid",
+                "description": "Unique identifier of the executed target"
+              },
+              "target_name": {
+                "type": "string",
+                "minLength": 1,
+                "description": "Name of the executed target"
+              },
+              "executed_at": {
+                "type": "string",
+                "format": "date-time",
+                "description": "ISO8601 timestamp when the target was executed"
+              },
+              "outcome": {
+                "type": "string",
+                "enum": ["success", "failure", "partial", "skipped"],
+                "description": "Outcome of the target execution"
+              },
+              "operations_executed": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": ["operation_name", "executed_at", "success"],
+                  "properties": {
+                    "operation_name": {
+                      "type": "string",
+                      "description": "Name of the operation executed"
+                    },
+                    "executed_at": {
+                      "type": "string",
+                      "format": "date-time",
+                      "description": "When the operation was executed"
+                    },
+                    "success": {
+                      "type": "boolean",
+                      "description": "Whether the operation succeeded"
+                    },
+                    "duration_ms": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "description": "Operation duration in milliseconds"
+                    },
+                    "error_message": {
+                      "type": "string",
+                      "description": "Error message if operation failed"
+                    },
+                    "http_status_code": {
+                      "type": "integer",
+                      "description": "HTTP status code if applicable"
+                    }
+                  }
+                },
+                "description": "List of operations executed on this target"
+              },
+              "endpoint_called": {
+                "type": "string",
+                "format": "uri",
+                "description": "Endpoint that was called"
+              },
+              "requests_made": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Number of requests made to this target"
+              },
+              "mocked": {
+                "type": "boolean",
+                "default": false,
+                "description": "Whether a mock was used instead of the real target"
+              },
+              "duration_ms": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Total duration of target execution in milliseconds"
+              },
+              "node_ids": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "description": "Execution graph node IDs associated with this target"
+              }
+            }
+          }
+        }
+      }
+    },
+    "telemetry": {
+      "type": "array",
+      "description": "Array of telemetry envelope objects collected during simulation",
+      "items": {
+        "type": "object",
+        "required": ["telemetry_id", "telemetry_type", "timestamp", "data"],
+        "additionalProperties": false,
+        "properties": {
+          "telemetry_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Unique identifier for this telemetry entry"
+          },
+          "telemetry_type": {
+            "type": "string",
+            "enum": ["metric", "trace", "log", "event", "span"],
+            "description": "Type of telemetry data"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "description": "ISO8601 timestamp when telemetry was collected"
+          },
+          "source": {
+            "type": "object",
+            "description": "Source of the telemetry data",
+            "properties": {
+              "service_id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "service_name": {
+                "type": "string"
+              },
+              "layer": {
+                "type": "string",
+                "enum": [
+                  "foundational_services",
+                  "intelligence_services",
+                  "core_bundles",
+                  "integration_targets"
+                ]
+              },
+              "node_id": {
+                "type": "string",
+                "format": "uuid"
+              }
+            }
+          },
+          "data": {
+            "type": "object",
+            "additionalProperties": true,
+            "description": "Telemetry payload data"
+          },
+          "tags": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "Key-value tags for filtering and grouping"
+          },
+          "severity": {
+            "type": "string",
+            "enum": ["debug", "info", "warning", "error", "critical"],
+            "description": "Severity level for log-type telemetry"
+          }
+        }
+      }
+    },
+    "duration_ms": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Total simulation duration in milliseconds"
+    },
+    "contract_violations": {
+      "type": "array",
+      "description": "Array of contract violations detected. Must be empty for a valid successful response.",
+      "items": {
+        "type": "object",
+        "required": [
+          "violation_id",
+          "contract_name",
+          "violation_type",
+          "message",
+          "detected_at"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "violation_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Unique identifier for this violation"
+          },
+          "contract_name": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Name of the contract that was violated"
+          },
+          "contract_version": {
+            "type": "string",
+            "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)$",
+            "description": "Version of the violated contract"
+          },
+          "violation_type": {
+            "type": "string",
+            "enum": [
+              "schema_validation",
+              "constraint_violation",
+              "timeout",
+              "missing_field",
+              "invalid_value",
+              "dependency_violation",
+              "layer_not_exercised"
+            ],
+            "description": "Type of contract violation"
+          },
+          "message": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Human-readable description of the violation"
+          },
+          "path": {
+            "type": "string",
+            "description": "JSON path to the violating element"
+          },
+          "expected_value": {
+            "type": "string",
+            "description": "Expected value or constraint"
+          },
+          "actual_value": {
+            "type": "string",
+            "description": "Actual value that caused the violation"
+          },
+          "service_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Service where violation occurred"
+          },
+          "layer": {
+            "type": "string",
+            "enum": [
+              "foundational_services",
+              "intelligence_services",
+              "core_bundles",
+              "integration_targets"
+            ],
+            "description": "Layer where violation occurred"
+          },
+          "detected_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "ISO8601 timestamp when violation was detected"
+          },
+          "severity": {
+            "type": "string",
+            "enum": ["critical", "high", "medium", "low"],
+            "description": "Severity of the violation"
+          }
+        }
+      }
+    },
+    "started_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO8601 timestamp when simulation started"
+    },
+    "completed_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO8601 timestamp when simulation completed"
+    },
+    "metadata": {
+      "type": "object",
+      "description": "Additional response metadata",
+      "additionalProperties": true,
+      "properties": {
+        "simulation_engine_version": {
+          "type": "string",
+          "description": "Version of the simulation engine that executed the simulation"
+        },
+        "runner_version": {
+          "type": "string",
+          "description": "Version of the simulator runner"
+        },
+        "environment": {
+          "type": "string",
+          "description": "Environment where simulation was executed"
+        },
+        "host": {
+          "type": "string",
+          "description": "Host identifier where simulation ran"
+        },
+        "correlation_id": {
+          "type": "string",
+          "description": "Correlation ID for distributed tracing"
+        },
+        "warnings": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Non-fatal warnings generated during simulation"
+        }
+      }
+    }
+  }
+}

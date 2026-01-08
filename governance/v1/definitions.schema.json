@@ -1,0 +1,541 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://agentics.org/schemas/governance/v1/definitions.schema.json",
+  "title": "Agentics Platform Governance Definitions",
+  "description": "Common definitions and shared types for governance schemas across the agentics-contracts platform",
+  "definitions": {
+    "uuid_format": {
+      "type": "string",
+      "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$",
+      "description": "RFC 4122 compliant UUID"
+    },
+    "semver_format": {
+      "type": "string",
+      "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$",
+      "description": "Semantic Versioning 2.0.0 compliant version string"
+    },
+    "timestamp_format": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 compliant timestamp with timezone"
+    },
+    "layer_enum": {
+      "type": "string",
+      "enum": [
+        "foundational",
+        "intelligence",
+        "core",
+        "integration_infra",
+        "apex"
+      ],
+      "description": "Platform architectural layers from foundational to apex"
+    },
+    "layer_enum_extended": {
+      "type": "string",
+      "enum": [
+        "foundational",
+        "foundational.compute",
+        "foundational.storage",
+        "foundational.network",
+        "foundational.security",
+        "intelligence",
+        "intelligence.llm",
+        "intelligence.embedding",
+        "intelligence.reasoning",
+        "intelligence.vision",
+        "intelligence.speech",
+        "core",
+        "core.orchestration",
+        "core.workflow",
+        "core.state",
+        "core.messaging",
+        "core.scheduling",
+        "integration_infra",
+        "integration_infra.api",
+        "integration_infra.data",
+        "integration_infra.event",
+        "integration_infra.monitoring",
+        "integration_infra.logging",
+        "apex",
+        "apex.agent",
+        "apex.multi_agent",
+        "apex.autonomous",
+        "apex.human_in_loop"
+      ],
+      "description": "Extended layer enumeration including sub-layer classifications"
+    },
+    "environment_enum": {
+      "type": "string",
+      "enum": [
+        "development",
+        "testing",
+        "staging",
+        "production",
+        "sandbox",
+        "disaster_recovery",
+        "canary",
+        "blue_green_active",
+        "blue_green_standby"
+      ],
+      "description": "Deployment environment identifiers"
+    },
+    "service_identifier": {
+      "type": "object",
+      "description": "Identifies a service within the platform",
+      "properties": {
+        "service_name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256,
+          "pattern": "^[a-zA-Z][a-zA-Z0-9_.-]*$",
+          "description": "Unique service name within the platform"
+        },
+        "service_version": {
+          "$ref": "#/definitions/semver_format"
+        },
+        "layer": {
+          "$ref": "#/definitions/layer_enum"
+        },
+        "namespace": {
+          "type": "string",
+          "pattern": "^[a-zA-Z][a-zA-Z0-9_.-]*$",
+          "description": "Logical namespace for service grouping"
+        },
+        "instance_id": {
+          "$ref": "#/definitions/uuid_format"
+        }
+      },
+      "required": ["service_name", "layer"],
+      "additionalProperties": false
+    },
+    "service_pattern": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 512,
+      "pattern": "^[a-zA-Z*][a-zA-Z0-9_.*-]*$",
+      "description": "Service name pattern with glob support (* and ** wildcards)"
+    },
+    "layer_participation": {
+      "type": "object",
+      "description": "Describes how an entity participates in platform layers",
+      "properties": {
+        "primary_layer": {
+          "$ref": "#/definitions/layer_enum"
+        },
+        "secondary_layers": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/layer_enum"
+          },
+          "uniqueItems": true,
+          "description": "Additional layers this entity interacts with"
+        },
+        "layer_permissions": {
+          "type": "object",
+          "properties": {
+            "foundational": {
+              "$ref": "#/definitions/layer_permission"
+            },
+            "intelligence": {
+              "$ref": "#/definitions/layer_permission"
+            },
+            "core": {
+              "$ref": "#/definitions/layer_permission"
+            },
+            "integration_infra": {
+              "$ref": "#/definitions/layer_permission"
+            },
+            "apex": {
+              "$ref": "#/definitions/layer_permission"
+            }
+          },
+          "additionalProperties": false
+        },
+        "cross_layer_allowed": {
+          "type": "boolean",
+          "default": false,
+          "description": "Whether this entity can make cross-layer calls"
+        }
+      },
+      "required": ["primary_layer"],
+      "additionalProperties": false
+    },
+    "layer_permission": {
+      "type": "object",
+      "description": "Permission set for a specific layer",
+      "properties": {
+        "read": {
+          "type": "boolean",
+          "default": false
+        },
+        "write": {
+          "type": "boolean",
+          "default": false
+        },
+        "execute": {
+          "type": "boolean",
+          "default": false
+        },
+        "admin": {
+          "type": "boolean",
+          "default": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "principal": {
+      "type": "object",
+      "description": "An entity that can perform actions in the platform",
+      "properties": {
+        "principal_id": {
+          "$ref": "#/definitions/uuid_format"
+        },
+        "principal_type": {
+          "type": "string",
+          "enum": [
+            "user",
+            "service_account",
+            "agent",
+            "system",
+            "external_service",
+            "federated_identity"
+          ]
+        },
+        "display_name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "email": {
+          "type": "string",
+          "format": "email"
+        },
+        "attributes": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Additional attributes for policy evaluation"
+        }
+      },
+      "required": ["principal_id", "principal_type"],
+      "additionalProperties": false
+    },
+    "resource_identifier": {
+      "type": "object",
+      "description": "Identifies a resource within the platform",
+      "properties": {
+        "resource_type": {
+          "type": "string",
+          "enum": [
+            "service",
+            "workflow",
+            "agent",
+            "data_store",
+            "model",
+            "endpoint",
+            "secret",
+            "configuration",
+            "execution_graph",
+            "telemetry_stream",
+            "policy",
+            "contract"
+          ]
+        },
+        "resource_id": {
+          "$ref": "#/definitions/uuid_format"
+        },
+        "resource_path": {
+          "type": "string",
+          "pattern": "^/[a-zA-Z0-9/_.-]*$",
+          "description": "Hierarchical resource path"
+        },
+        "layer": {
+          "$ref": "#/definitions/layer_enum"
+        },
+        "environment": {
+          "$ref": "#/definitions/environment_enum"
+        }
+      },
+      "required": ["resource_type", "resource_id"],
+      "additionalProperties": false
+    },
+    "approval_requirement": {
+      "type": "object",
+      "description": "Defines approval requirements for an action",
+      "properties": {
+        "minimum_approvers": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 10,
+          "default": 1
+        },
+        "required_roles": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "platform_admin",
+              "security_admin",
+              "compliance_officer",
+              "service_owner",
+              "team_lead",
+              "architect",
+              "sre"
+            ]
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        },
+        "approval_timeout_hours": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 168,
+          "default": 24
+        },
+        "escalation_after_hours": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 72
+        },
+        "allow_self_approval": {
+          "type": "boolean",
+          "default": false
+        }
+      },
+      "required": ["minimum_approvers", "required_roles"],
+      "additionalProperties": false
+    },
+    "rate_limit_config": {
+      "type": "object",
+      "description": "Rate limiting configuration",
+      "properties": {
+        "requests_per_second": {
+          "type": "number",
+          "minimum": 0.001,
+          "maximum": 1000000
+        },
+        "requests_per_minute": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 60000000
+        },
+        "requests_per_hour": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 3600000000
+        },
+        "requests_per_day": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "burst_limit": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Maximum burst size allowed"
+        },
+        "rate_limit_by": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "principal",
+              "service",
+              "endpoint",
+              "ip_address",
+              "api_key",
+              "tenant"
+            ]
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        }
+      },
+      "additionalProperties": false
+    },
+    "time_window": {
+      "type": "object",
+      "description": "Defines a time window for policy application",
+      "properties": {
+        "start_time": {
+          "type": "string",
+          "pattern": "^([01]?[0-9]|2[0-3]):[0-5][0-9]$",
+          "description": "Start time in HH:MM format (24-hour)"
+        },
+        "end_time": {
+          "type": "string",
+          "pattern": "^([01]?[0-9]|2[0-3]):[0-5][0-9]$",
+          "description": "End time in HH:MM format (24-hour)"
+        },
+        "timezone": {
+          "type": "string",
+          "pattern": "^[A-Za-z_]+/[A-Za-z_]+$",
+          "default": "UTC",
+          "description": "IANA timezone identifier"
+        },
+        "days_of_week": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "monday",
+              "tuesday",
+              "wednesday",
+              "thursday",
+              "friday",
+              "saturday",
+              "sunday"
+            ]
+          },
+          "uniqueItems": true
+        }
+      },
+      "required": ["start_time", "end_time"],
+      "additionalProperties": false
+    },
+    "audit_metadata": {
+      "type": "object",
+      "description": "Standard audit metadata for all governance objects",
+      "properties": {
+        "created_at": {
+          "$ref": "#/definitions/timestamp_format"
+        },
+        "created_by": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "updated_at": {
+          "$ref": "#/definitions/timestamp_format"
+        },
+        "updated_by": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "version": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Monotonically increasing version number for optimistic locking"
+        },
+        "change_reason": {
+          "type": "string",
+          "maxLength": 1000
+        }
+      },
+      "required": ["created_at", "created_by"],
+      "additionalProperties": false
+    },
+    "compliance_framework": {
+      "type": "string",
+      "enum": [
+        "SOC2",
+        "SOC2_TYPE_II",
+        "HIPAA",
+        "PCI_DSS",
+        "GDPR",
+        "CCPA",
+        "ISO_27001",
+        "ISO_27017",
+        "ISO_27018",
+        "FedRAMP",
+        "NIST_800_53",
+        "NIST_CSF",
+        "CIS",
+        "OWASP",
+        "custom"
+      ],
+      "description": "Compliance framework identifier"
+    },
+    "severity_level": {
+      "type": "string",
+      "enum": [
+        "critical",
+        "high",
+        "medium",
+        "low",
+        "informational"
+      ],
+      "description": "Severity level for policy violations and alerts"
+    },
+    "condition_operator": {
+      "type": "string",
+      "enum": [
+        "equals",
+        "not_equals",
+        "contains",
+        "not_contains",
+        "starts_with",
+        "ends_with",
+        "matches_regex",
+        "greater_than",
+        "less_than",
+        "greater_than_or_equal",
+        "less_than_or_equal",
+        "in",
+        "not_in",
+        "exists",
+        "not_exists",
+        "is_empty",
+        "is_not_empty"
+      ],
+      "description": "Comparison operators for condition evaluation"
+    },
+    "logical_operator": {
+      "type": "string",
+      "enum": [
+        "and",
+        "or",
+        "not",
+        "nand",
+        "nor",
+        "xor"
+      ],
+      "description": "Logical operators for combining conditions"
+    },
+    "schema_reference": {
+      "type": "object",
+      "description": "Reference to a JSON Schema",
+      "properties": {
+        "schema_path": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9/_.-]+\\.schema\\.json$",
+          "description": "Path to the schema file"
+        },
+        "schema_version": {
+          "$ref": "#/definitions/semver_format"
+        },
+        "schema_id": {
+          "type": "string",
+          "format": "uri"
+        }
+      },
+      "required": ["schema_path"],
+      "additionalProperties": false
+    },
+    "contract_reference": {
+      "type": "object",
+      "description": "Reference to a platform contract",
+      "properties": {
+        "contract_id": {
+          "$ref": "#/definitions/uuid_format"
+        },
+        "contract_type": {
+          "type": "string",
+          "enum": [
+            "service_contract",
+            "data_contract",
+            "api_contract",
+            "sla_contract",
+            "governance_contract"
+          ]
+        },
+        "contract_version": {
+          "$ref": "#/definitions/semver_format"
+        }
+      },
+      "required": ["contract_id", "contract_type"],
+      "additionalProperties": false
+    }
+  }
+}
