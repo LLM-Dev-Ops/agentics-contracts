@@ -1,99 +1,157 @@
-# @agentics/contracts
+<p align="center">
+  <img src="https://img.shields.io/npm/v/@llm-dev-ops/contracts?style=for-the-badge&logo=npm&logoColor=white&label=npm&color=CB3837" alt="npm version" />
+  <img src="https://img.shields.io/badge/JSON_Schema-Draft_07-blue?style=for-the-badge&logo=json&logoColor=white" alt="JSON Schema Draft 07" />
+  <img src="https://img.shields.io/badge/Node.js-%3E%3D18.0.0-339933?style=for-the-badge&logo=nodedotjs&logoColor=white" alt="Node.js >= 18" />
+  <img src="https://img.shields.io/badge/TypeScript-Typed-3178C6?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript" />
+  <img src="https://img.shields.io/badge/License-See_Below-EF9421?style=for-the-badge&logo=opensourceinitiative&logoColor=white" alt="License" />
+</p>
 
-## The Authoritative Contract Layer for the Agentics Platform
+<h1 align="center">📜 @llm-dev-ops/contracts</h1>
 
----
+<p align="center">
+  <strong>The Authoritative Contract Layer for the Agentics Platform</strong><br/>
+  <em>Enforceable · Versioned · Strongly Typed · Zero Bypass</em>
+</p>
 
-## CONSTITUTIONAL AUTHORITY
-
-This repository is the **single source of truth** for all request/response contracts in the Agentics platform. Every service, CLI tool, and agent in the platform MUST validate against these contracts. There are no exceptions.
-
-**Key Principles:**
-- All contracts are **AUTHORITATIVE** - they define what is valid
-- All contracts are **ENFORCEABLE** - validation is mandatory, not optional
-- All contracts are **VERSIONED** - breaking changes require new versions
-- **NO BYPASS IS PERMITTED** - requests that fail validation MUST be rejected
-
----
-
-## Table of Contents
-
-1. [Purpose and Authority](#1-purpose-and-authority)
-2. [Platform Architecture](#2-platform-architecture)
-3. [Contract Schemas](#3-contract-schemas)
-4. [Versioning Rules](#4-versioning-rules)
-5. [CLI Consumption](#5-cli-consumption)
-6. [Service Consumption](#6-service-consumption)
-7. [Execution Graph Proof](#7-execution-graph-proof)
-8. [Enforcement Model](#8-enforcement-model)
-9. [What Belongs Here](#9-what-belongs-here)
-10. [Prohibition on Bypassing](#10-prohibition-on-bypassing)
-11. [Installation and Usage](#11-installation-and-usage)
+<p align="center">
+  <a href="#-getting-started">Getting Started</a> ·
+  <a href="#-contract-domains">Domains</a> ·
+  <a href="#-lifecycle-specs">Lifecycle Specs</a> ·
+  <a href="#-enforcement-model">Enforcement</a> ·
+  <a href="#-licensing">Licensing</a>
+</p>
 
 ---
 
-## 1. Purpose and Authority
+## ⚠️ Licensing
 
-### 1.1 Why This Repository Exists
+> **This package requires a valid license for use in production environments.**
 
-The Agentics platform is a complex, multi-layered system with dozens of services that must communicate reliably. Without a central contract layer:
+| Use Case | License Required | Contact |
+|----------|:---:|---------|
+| 🔍 Evaluation & Development | ✅ Free | — |
+| 🏢 Commercial / Production | 💼 **Commercial License** | [sales@globalbusinessadvisors.co](mailto:sales@globalbusinessadvisors.co) |
+| 🎓 Academic / Research | 📄 Academic License | [sales@globalbusinessadvisors.co](mailto:sales@globalbusinessadvisors.co) |
+| 🤝 Open Source Integration | 📄 OSS License | [sales@globalbusinessadvisors.co](mailto:sales@globalbusinessadvisors.co) |
 
-- Services would implement incompatible request/response formats
-- Breaking changes would cascade unpredictably
-- Validation logic would be duplicated and inconsistent
-- Debugging would require tracing through multiple codebases
-
-This repository solves these problems by providing:
-
-1. **Authoritative JSON Schemas** that define every valid request and response
-2. **Versioned contracts** that allow controlled evolution
-3. **Validation tooling** that ensures compliance before runtime
-4. **Execution proof structures** that verify all layers participated
-
-### 1.2 Scope of Authority
-
-These contracts govern:
-
-| Domain | Authority |
-|--------|-----------|
-| `execution/` | Execution graphs, metadata, and telemetry envelopes |
-| `simulation/` | Simulation requests, responses, and error formats |
-| `intent/` | User intent parsing and routing |
-| `exporters/` | Data export request formats |
-| `diligence/` | Due diligence and compliance checks |
-| `roi/` | ROI calculation and reporting |
-| `governance/` | Policy definitions and enforcement rules |
-
-### 1.3 What These Contracts Guarantee
-
-When a request or response validates against these schemas, the platform guarantees:
-
-- **Structural Validity**: All required fields are present with correct types
-- **Semantic Consistency**: Field values conform to defined patterns and constraints
-- **Version Compatibility**: The payload matches the declared schema version
-- **Traceable Provenance**: Execution graphs prove which layers processed the request
+By installing or using this package, you agree to the [License Terms](#-license-terms). Unauthorized use in production without a valid license is prohibited.
 
 ---
 
-## 2. Platform Architecture
+## 🏛️ Constitutional Authority
 
-The Agentics platform is organized into distinct layers, each with specific responsibilities. Every layer MUST validate against the contracts defined in this repository.
+This repository is the **single source of truth** for all request/response contracts in the Agentics platform. Every service, CLI tool, and agent MUST validate against these contracts.
 
-### 2.1 Layer 1: Foundational Services
+| Principle | Guarantee |
+|-----------|-----------|
+| 🔒 **Authoritative** | Contracts define what is valid — no other source |
+| ⚖️ **Enforceable** | Validation is mandatory, not optional |
+| 🏷️ **Versioned** | Breaking changes require new major versions |
+| 🚫 **No Bypass** | Requests failing validation MUST be rejected |
 
-These services provide the infrastructure and core capabilities that all other layers depend on.
+---
+
+## 📋 Table of Contents
+
+| # | Section | Description |
+|---|---------|-------------|
+| 1 | [🚀 Getting Started](#-getting-started) | Installation and basic usage |
+| 2 | [🏗️ Platform Architecture](#️-platform-architecture) | Layer overview and service map |
+| 3 | [📦 Contract Domains](#-contract-domains) | All schema domains and their purpose |
+| 4 | [🔄 Lifecycle Specs](#-lifecycle-specs) | Canonical lifecycle state machines |
+| 5 | [🏷️ Versioning Rules](#️-versioning-rules) | Semver policy and breaking change rules |
+| 6 | [🖥️ CLI Consumption](#️-cli-consumption) | CLI integration patterns |
+| 7 | [⚙️ Service Consumption](#️-service-consumption) | Service-side validation patterns |
+| 8 | [🔗 Execution Graph Proof](#-execution-graph-proof) | Cryptographic layer-traversal proof |
+| 9 | [🛡️ Enforcement Model](#️-enforcement-model) | Failure modes and enforcement points |
+| 10 | [📐 Schema Design Rules](#-schema-design-rules) | What belongs (and doesn't) in this repo |
+| 11 | [🤝 Contributing](#-contributing) | How to add or modify contracts |
+| 12 | [📄 Licensing](#-license-terms) | Full license terms |
+
+---
+
+## 🚀 Getting Started
+
+### Installation
+
+```bash
+npm install @llm-dev-ops/contracts
+```
+
+### Quick Start
+
+```javascript
+const contracts = require('@llm-dev-ops/contracts');
+const Ajv = require('ajv');
+const addFormats = require('ajv-formats');
+
+const ajv = new Ajv({ allErrors: true });
+addFormats(ajv);
+
+// 📌 Load any schema by domain / version / name
+const schemaPath = contracts.getSchema('simulation', 'v1', 'request');
+const validate = ajv.compile(require(schemaPath));
+
+// ✅ Validate before sending
+const valid = validate(payload);
+if (!valid) throw new Error(JSON.stringify(validate.errors));
+```
+
+### TypeScript
+
+```typescript
+import contracts = require('@llm-dev-ops/contracts');
+
+const path: string | undefined = contracts.getSchema('lifecycle', 'v1', 'simulationLifecycle');
+const domains: string[] = contracts.getDomains();
+```
+
+### Direct Import
+
+```javascript
+// Import schemas directly via package exports
+const schema = require('@llm-dev-ops/contracts/lifecycle/v1/simulation-lifecycle');
+const policy = require('@llm-dev-ops/contracts/governance/v1/policy');
+```
+
+---
+
+## 🏗️ Platform Architecture
+
+The Agentics platform is organized into distinct layers. Every layer MUST validate against contracts defined in this repository.
+
+```
+┌──────────────────────────────────────────────────────────────────┐
+│  🔺 APEX LAYER                                                   │
+│  Dev Platform · CLI · Console · API Gateway · Agent Runtime      │
+├──────────────────────────────────────────────────────────────────┤
+│  🧩 LAYER 3 — CORE BUNDLES                                      │
+│  Intelligence · Security · Automation · Governance · Data · ...  │
+├──────────────────────────────────────────────────────────────────┤
+│  🧠 LAYER 2 — INTELLIGENCE SERVICES                             │
+│  CoPilot · Simulator · Benchmark · Gateway · Vault · Research    │
+├──────────────────────────────────────────────────────────────────┤
+│  🔧 LAYER 1 — FOUNDATIONAL SERVICES                             │
+│  Test-Bench · Observatory · Shield · Sentinel · Memory-Graph     │
+│  Latency-Lens · Forge · Edge-Agent · Optimizer · Incident · ...  │
+├──────────────────────────────────────────────────────────────────┤
+│  📜 @llm-dev-ops/contracts — THIS REPOSITORY (SOURCE OF TRUTH)  │
+└──────────────────────────────────────────────────────────────────┘
+```
+
+### 🔧 Layer 1 — Foundational Services
 
 | Service | Purpose |
 |---------|---------|
-| **LLM-Test-Bench** | Automated testing framework for LLM behaviors and outputs |
-| **LLM-Observatory** | Real-time monitoring and observability for LLM operations |
-| **LLM-Shield** | Security layer for prompt injection, jailbreak prevention |
-| **LLM-Sentinel** | Continuous security monitoring and threat detection |
-| **LLM-Memory-Graph** | Persistent memory and context management for agents |
+| **LLM-Test-Bench** | Automated testing framework for LLM behaviors |
+| **LLM-Observatory** | Real-time monitoring and observability |
+| **LLM-Shield** | Prompt injection & jailbreak prevention |
+| **LLM-Sentinel** | Continuous security monitoring & threat detection |
+| **LLM-Memory-Graph** | Persistent memory and context management |
 | **LLM-Latency-Lens** | Performance profiling and latency analysis |
 | **LLM-Forge** | Model fine-tuning and customization pipeline |
-| **LLM-Edge-Agent** | Edge deployment and local inference capabilities |
-| **LLM-Auto-Optimizer** | Automatic prompt and configuration optimization |
+| **LLM-Edge-Agent** | Edge deployment and local inference |
+| **LLM-Auto-Optimizer** | Automatic prompt and config optimization |
 | **LLM-Incident-Manager** | Incident detection, escalation, and resolution |
 | **LLM-Orchestrator** | Multi-agent coordination and workflow management |
 | **LLM-CostOps** | Cost tracking, budgeting, and optimization |
@@ -106,99 +164,61 @@ These services provide the infrastructure and core capabilities that all other l
 | **LLM-Schema-Registry** | Schema versioning and compatibility checking |
 | **LLM-Connector-Hub** | Integration connectors for external systems |
 
-### 2.2 Layer 2: Intelligence Services
-
-These services provide advanced capabilities that build on the foundational layer.
+### 🧠 Layer 2 — Intelligence Services
 
 | Service | Purpose |
 |---------|---------|
 | **LLM-CoPilot-Agent** | Interactive AI assistant with multi-modal capabilities |
-| **LLM-Simulator** | Simulation engine for what-if scenarios and testing |
+| **LLM-Simulator** | Simulation engine for what-if scenarios |
 | **LLM-Benchmark-Exchange** | Benchmark sharing and comparison platform |
-| **LLM-Inference-Gateway** | Unified inference API with routing and load balancing |
-| **LLM-Data-Vault** | Secure data storage with encryption and access control |
+| **LLM-Inference-Gateway** | Unified inference API with routing & load balancing |
+| **LLM-Data-Vault** | Secure data storage with encryption & access control |
 | **LLM-Research-Lab** | Experimental features and research integrations |
 
-### 2.3 Layer 3: Core Bundles
+### 🧩 Layer 3 — Core Bundles
 
-Core bundles aggregate related services into cohesive functional units.
+| Bundle | Services | Purpose |
+|--------|----------|---------|
+| **Intelligence-Core** | CoPilot, Simulator, Auto-Optimizer | Primary intelligence |
+| **Security-Core** | Shield, Sentinel, Data-Vault | Security & protection |
+| **Automation-Core** | Orchestrator, Config-Manager, Forge | Automation |
+| **Governance-Core** | Policy-Engine, Governance-Dashboard | Compliance |
+| **Data-Core** | Memory-Graph, Analytics-Hub, Data-Vault | Data management |
+| **Ecosystem-Core** | Registry, Marketplace, Connector-Hub | Integrations |
+| **Research-Core** | Research-Lab, Benchmark-Exchange | Research |
+| **Interface-Core** | Gateway, Edge-Agent, CoPilot | User-facing |
 
-| Bundle | Included Services | Purpose |
-|--------|-------------------|---------|
-| **LLM-Intelligence-Core** | CoPilot, Simulator, Auto-Optimizer | Primary intelligence capabilities |
-| **LLM-Security-Core** | Shield, Sentinel, Data-Vault | Security and protection |
-| **LLM-Automation-Core** | Orchestrator, Config-Manager, Forge | Automation and orchestration |
-| **LLM-Governance-Core** | Policy-Engine, Governance-Dashboard | Compliance and governance |
-| **LLM-Data-Core** | Memory-Graph, Analytics-Hub, Data-Vault | Data management and analytics |
-| **LLM-Ecosystem-Core** | Registry, Marketplace, Connector-Hub | Ecosystem and integrations |
-| **LLM-Research-Core** | Research-Lab, Benchmark-Exchange | Research and experimentation |
-| **LLM-Interface-Core** | Gateway, Edge-Agent, CoPilot | User-facing interfaces |
-
-### 2.4 Apex Layer
-
-The Apex Layer provides the unified platform experience.
+### 🔺 Apex Layer
 
 | Component | Purpose |
 |-----------|---------|
-| **Agentics Dev Platform** | Unified development environment and SDK |
+| **Agentics Dev Platform** | Unified development environment & SDK |
 | **Agentics CLI** | Command-line interface for all platform operations |
 | **Agentics Console** | Web-based management console |
 | **Agentics API Gateway** | Unified API surface for external consumers |
 | **Agentics Agent Runtime** | Production runtime for deployed agents |
 
-### 2.5 Layer Interaction Diagram
-
-```
-+------------------------------------------------------------------+
-|                         APEX LAYER                                |
-|  Agentics Dev Platform | CLI | Console | API Gateway | Runtime   |
-+------------------------------------------------------------------+
-                                |
-                    Validates against contracts
-                                |
-                                v
-+------------------------------------------------------------------+
-|                    LAYER 3: CORE BUNDLES                         |
-|  Intelligence | Security | Automation | Governance | Data | ...  |
-+------------------------------------------------------------------+
-                                |
-                    Validates against contracts
-                                |
-                                v
-+------------------------------------------------------------------+
-|                 LAYER 2: INTELLIGENCE SERVICES                    |
-|  CoPilot | Simulator | Benchmark | Gateway | Vault | Research    |
-+------------------------------------------------------------------+
-                                |
-                    Validates against contracts
-                                |
-                                v
-+------------------------------------------------------------------+
-|                 LAYER 1: FOUNDATIONAL SERVICES                    |
-|  Test-Bench | Observatory | Shield | Sentinel | Memory-Graph |   |
-|  Latency-Lens | Forge | Edge-Agent | Optimizer | Incident | ...  |
-+------------------------------------------------------------------+
-                                |
-                    Validates against contracts
-                                |
-                                v
-+------------------------------------------------------------------+
-|                    @agentics/contracts                            |
-|              (THIS REPOSITORY - SOURCE OF TRUTH)                  |
-+------------------------------------------------------------------+
-```
-
 ---
 
-## 3. Contract Schemas
+## 📦 Contract Domains
 
-### 3.1 Execution Contracts (`execution/`)
+### Overview
 
-Execution contracts define how operations are tracked and proven across the platform.
+| Domain | Directory | Schemas | Purpose |
+|--------|-----------|:-------:|---------|
+| 🔗 Execution | `execution/v1/` | 3 | Execution graphs, metadata, telemetry |
+| 🧪 Simulation | `simulation/v1/` | 3 | Simulation requests, responses, errors |
+| 🎯 Intent | `intent/v1/` | 1 | User intent parsing and routing |
+| 📤 Exporters | `exporters/v1/` | 1 | Data export request formats |
+| ✅ Diligence | `diligence/v1/` | 1 | Compliance and due diligence checks |
+| 💰 ROI | `roi/v1/` | 1 | ROI calculation and reporting |
+| ⚖️ Governance | `governance/v1/` | 2 | Policy definitions and enforcement |
+| 🔄 **Lifecycle** | `lifecycle/v1/` | **5** | **Canonical lifecycle state machines** |
+
+### 🔗 Execution Contracts
 
 #### `execution/v1/execution-graph.schema.json`
-
-The execution graph is the cryptographic proof that a request traversed all required layers.
+Cryptographic proof that a request traversed all required layers.
 
 ```json
 {
@@ -218,534 +238,320 @@ The execution graph is the cryptographic proof that a request traversed all requ
 }
 ```
 
-**Enforcement**: Every response MUST include an execution graph proving layer participation.
-
 #### `execution/v1/execution-metadata.schema.json`
-
-Metadata about the execution context and environment.
-
-```json
-{
-  "correlationId": "uuid",
-  "tenantId": "string",
-  "userId": "string",
-  "sessionId": "string",
-  "environment": "production|staging|development",
-  "region": "string",
-  "tags": {}
-}
-```
+Execution context and environment metadata.
 
 #### `execution/v1/telemetry-envelope.schema.json`
-
 Standard envelope for all telemetry data emitted during execution.
 
-```json
-{
-  "envelopeId": "uuid",
-  "executionId": "uuid",
-  "timestamp": "ISO-8601",
-  "source": "service-name",
-  "type": "metric|log|trace|span",
-  "payload": {}
-}
-```
-
-### 3.2 Simulation Contracts (`simulation/`)
-
-Simulation contracts govern the simulation engine used for what-if analysis.
+### 🧪 Simulation Contracts
 
 #### `simulation/v1/request.schema.json`
-
 ```json
 {
   "simulationId": "uuid",
-  "scenario": {
-    "name": "string",
-    "parameters": {},
-    "constraints": []
-  },
-  "executionMetadata": { /* execution-metadata */ }
+  "scenario": { "name": "string", "parameters": {}, "constraints": [] },
+  "executionMetadata": {}
 }
 ```
 
 #### `simulation/v1/response.schema.json`
-
-```json
-{
-  "simulationId": "uuid",
-  "status": "completed|failed|timeout",
-  "results": {
-    "outcomes": [],
-    "metrics": {},
-    "recommendations": []
-  },
-  "executionGraph": { /* execution-graph */ }
-}
-```
+Simulation results including outcomes, metrics, and recommendations.
 
 #### `simulation/v1/errors.schema.json`
-
 Standardized error format for simulation failures.
 
-```json
-{
-  "errorCode": "SIM-XXX",
-  "message": "string",
-  "details": {},
-  "retryable": "boolean",
-  "documentation": "url"
-}
-```
+### 🎯 Intent · 📤 Exporters · ✅ Diligence · 💰 ROI
 
-### 3.3 Intent Contracts (`intent/`)
+Each domain provides a `request.schema.json` governing the input contract for its respective service. See individual schema files for full property definitions.
 
-Intent contracts define how user intentions are parsed and routed.
-
-#### `intent/v1/request.schema.json`
-
-```json
-{
-  "intentId": "uuid",
-  "rawInput": "string",
-  "context": {
-    "conversationId": "uuid",
-    "previousIntents": [],
-    "userPreferences": {}
-  },
-  "routing": {
-    "preferredServices": [],
-    "constraints": {}
-  }
-}
-```
-
-### 3.4 Exporter Contracts (`exporters/`)
-
-Exporter contracts define data export request formats.
-
-#### `exporters/v1/request.schema.json`
-
-```json
-{
-  "exportId": "uuid",
-  "format": "json|csv|parquet|arrow",
-  "source": {
-    "type": "query|dataset|stream",
-    "reference": "string"
-  },
-  "destination": {
-    "type": "s3|gcs|azure|local",
-    "path": "string",
-    "credentials": "reference"
-  },
-  "options": {
-    "compression": "none|gzip|snappy",
-    "partitioning": {}
-  }
-}
-```
-
-### 3.5 Diligence Contracts (`diligence/`)
-
-Diligence contracts define compliance and due diligence check formats.
-
-#### `diligence/v1/request.schema.json`
-
-```json
-{
-  "checkId": "uuid",
-  "checkType": "security|compliance|quality|cost",
-  "target": {
-    "type": "model|prompt|agent|workflow",
-    "reference": "string"
-  },
-  "policies": ["policy-id-1", "policy-id-2"],
-  "depth": "shallow|standard|deep"
-}
-```
-
-### 3.6 ROI Contracts (`roi/`)
-
-ROI contracts define return-on-investment calculation and reporting formats.
-
-#### `roi/v1/request.schema.json`
-
-```json
-{
-  "calculationId": "uuid",
-  "period": {
-    "start": "ISO-8601",
-    "end": "ISO-8601"
-  },
-  "scope": {
-    "tenants": [],
-    "services": [],
-    "models": []
-  },
-  "metrics": ["cost", "latency", "quality", "throughput"],
-  "comparisons": {
-    "baseline": {},
-    "variants": []
-  }
-}
-```
-
-### 3.7 Governance Contracts (`governance/`)
-
-Governance contracts define policy structures and enforcement rules.
+### ⚖️ Governance Contracts
 
 #### `governance/v1/policy.schema.json`
+Policy definitions with rules, conditions, enforcement modes.
 
-```json
-{
-  "policyId": "uuid",
-  "version": "semver",
-  "name": "string",
-  "description": "string",
-  "rules": [
-    {
-      "ruleId": "string",
-      "condition": {},
-      "action": "allow|deny|warn|audit",
-      "priority": "number"
-    }
-  ],
-  "enforcement": {
-    "mode": "strict|permissive|audit-only",
-    "scope": []
-  }
-}
-```
+#### `governance/v1/definitions.schema.json`
+Shared type definitions: UUIDs, semver, timestamps, layer enums, principals, resources.
 
 ---
 
-## 4. Versioning Rules
+## 🔄 Lifecycle Specs
 
-### 4.1 Semantic Versioning
+> **New in v1.1.0** — Canonical lifecycle state machines consumed by all downstream repos.
+
+Every lifecycle spec defines **10 ordered stages**, each tracked by a uniform `stage_record`:
+
+```json
+{
+  "status": "pending | in_progress | completed | failed | skipped",
+  "entered_at": "ISO-8601",
+  "completed_at": "ISO-8601",
+  "initiated_by": "principal-or-service",
+  "error": { "code": "...", "message": "...", "recoverable": true },
+  "artifacts": [{ "artifact_type": "...", "artifact_id": "uuid", "uri": "..." }]
+}
+```
+
+### 🧪 SimulationLifecycleSpec
+
+📄 `lifecycle/v1/simulation-lifecycle.schema.json`
+
+| # | Stage | Description |
+|:-:|-------|-------------|
+| 1 | `simulation_requested` | Simulation run formally requested |
+| 2 | `plan_created` | Simulation plan generated from request |
+| 3 | `plan_evaluated` | Plan evaluated for feasibility and risk |
+| 4 | `plan_approved` | Required approvals obtained |
+| 5 | `execution_started` | Simulation execution begins |
+| 6 | `execution_completed` | Execution finishes (success or failure) |
+| 7 | `telemetry_recorded` | Telemetry data persisted |
+| 8 | `cost_recorded` | Resource and financial costs captured |
+| 9 | `governance_recorded` | Compliance artifacts recorded |
+| 10 | `results_indexed` | Results indexed for querying and analysis |
+
+### 🚀 DeploymentLifecycleSpec
+
+📄 `lifecycle/v1/deployment-lifecycle.schema.json`
+
+| # | Stage | Description |
+|:-:|-------|-------------|
+| 1 | `intent_received` | Deployment intent received and validated |
+| 2 | `pre_checks_passed` | Health, capacity, and policy checks passed |
+| 3 | `artifacts_resolved` | Images, configs, and secrets resolved |
+| 4 | `approval_granted` | Human or automated approvals obtained |
+| 5 | `rollout_started` | Deployment rollout begins |
+| 6 | `rollout_completed` | Rollout finished across all targets |
+| 7 | `verification_passed` | Smoke tests and health checks passed |
+| 8 | `traffic_shifted` | Traffic shifted to new deployment |
+| 9 | `telemetry_recorded` | Deployment telemetry persisted |
+| 10 | `governance_recorded` | Compliance records filed |
+
+> Includes a `rollback` block for tracking rollback triggers, timestamps, and target versions.
+
+### ⚖️ PolicyLifecycleSpec
+
+📄 `lifecycle/v1/policy-lifecycle.schema.json`
+
+| # | Stage | Description |
+|:-:|-------|-------------|
+| 1 | `policy_drafted` | Policy authored in draft form |
+| 2 | `policy_reviewed` | Peer or compliance review completed |
+| 3 | `policy_approved` | Required approvals for activation |
+| 4 | `policy_published` | Published to governance registry |
+| 5 | `enforcement_started` | Enforcement activated across services |
+| 6 | `compliance_verified` | Initial compliance verification |
+| 7 | `audit_recorded` | Audit trail persisted |
+| 8 | `review_scheduled` | Periodic review cycle scheduled |
+| 9 | `policy_expired` | Reached expiration or superseded |
+| 10 | `policy_archived` | Archived for historical reference |
+
+> Metadata includes `enforcement_level`, `compliance_frameworks` (SOC2, HIPAA, GDPR, etc.), and `target_layers`.
+
+### 💰 RoiLifecycleSpec
+
+📄 `lifecycle/v1/roi-lifecycle.schema.json`
+
+| # | Stage | Description |
+|:-:|-------|-------------|
+| 1 | `analysis_requested` | ROI analysis formally requested |
+| 2 | `baseline_captured` | Current-state baselines captured |
+| 3 | `cost_data_collected` | Compute, license, labor costs gathered |
+| 4 | `benefit_data_collected` | Throughput, savings, quality metrics gathered |
+| 5 | `projection_calculated` | ROI projections and payback period calculated |
+| 6 | `projection_validated` | Projections validated against actuals/benchmarks |
+| 7 | `report_generated` | ROI report generated |
+| 8 | `stakeholder_reviewed` | Stakeholders reviewed and acknowledged |
+| 9 | `governance_recorded` | Governance artifacts filed |
+| 10 | `results_indexed` | Results indexed for trend analysis |
+
+> Metadata includes `time_horizon_months`, `currency` (ISO 4217), and `analysis_type`.
+
+### 🏢 ErpLifecycleSpec
+
+📄 `lifecycle/v1/erp-lifecycle.schema.json`
+
+| # | Stage | Description |
+|:-:|-------|-------------|
+| 1 | `sync_requested` | ERP sync operation requested |
+| 2 | `connection_established` | Connection to external ERP established |
+| 3 | `schema_validated` | Source/target schemas validated for compatibility |
+| 4 | `data_extracted` | Data extracted from source system |
+| 5 | `data_transformed` | Data transformed to match target schema |
+| 6 | `data_loaded` | Transformed data loaded into target |
+| 7 | `reconciliation_completed` | Source and target data reconciled |
+| 8 | `telemetry_recorded` | Sync telemetry (rows, latency, errors) persisted |
+| 9 | `governance_recorded` | Data lineage and compliance records filed |
+| 10 | `sync_finalized` | Operation finalized, connections released |
+
+> Supports: SAP S/4HANA, Oracle Fusion, Microsoft Dynamics 365, NetSuite, Workday, Sage Intacct, Custom.
+> Metadata includes `erp_system`, `sync_direction` (inbound/outbound/bidirectional), and `record_count`.
+
+---
+
+## 🏷️ Versioning Rules
+
+### Semantic Versioning
 
 All contracts follow [Semantic Versioning 2.0.0](https://semver.org/):
 
-- **MAJOR** (v1 -> v2): Breaking changes that require consumer updates
-- **MINOR** (v1.0 -> v1.1): Backward-compatible additions
-- **PATCH** (v1.0.0 -> v1.0.1): Backward-compatible fixes
+| Change Type | Version Bump | Example |
+|-------------|:------------:|---------|
+| 🔴 Breaking (remove field, change type) | **MAJOR** | v1 → v2 |
+| 🟢 Additive (new optional field, new schema) | **MINOR** | v1.0 → v1.1 |
+| 🔵 Fix (description, constraint widening) | **PATCH** | v1.0.0 → v1.0.1 |
 
-### 4.2 Version Directory Structure
-
-```
-contracts/
-  execution/
-    v1/
-      execution-graph.schema.json
-    v2/                              # Breaking changes go here
-      execution-graph.schema.json
-  simulation/
-    v1/
-      request.schema.json
-```
-
-### 4.3 Breaking Change Rules
+### ❌ Breaking Changes
 
 A change is **BREAKING** if it:
-
 1. Removes a required field
-2. Adds a new required field (without default)
+2. Adds a new required field without a default
 3. Changes the type of an existing field
-4. Narrows validation constraints (e.g., shorter maxLength)
+4. Narrows validation constraints
 5. Changes enumeration values
-6. Modifies semantic meaning of a field
+6. Modifies the semantic meaning of a field
 
-### 4.4 Non-Breaking Change Rules
+### ✅ Non-Breaking Changes
 
 A change is **NON-BREAKING** if it:
-
 1. Adds an optional field
-2. Widens validation constraints (e.g., longer maxLength)
-3. Adds new enumeration values (when consumers handle unknowns)
+2. Widens validation constraints
+3. Adds new enum values (when consumers handle unknowns)
 4. Improves descriptions or examples
-5. Adds new schemas to existing version
+5. Adds new schemas to an existing version
 
-### 4.5 Deprecation Policy
+### 🚫 No Silent Mutations
 
-1. Deprecated versions are marked in schema metadata
-2. Minimum 6-month deprecation window before removal
-3. Deprecation notices published to all consumer channels
-4. Removed versions archived in `_deprecated/` directory
-
-### 4.6 No Silent Mutations
-
-**CRITICAL**: Schema files MUST NOT be modified after publication without version increment. Every change, no matter how small, requires:
-
+Schema files MUST NOT be modified after publication without a version increment. Every change requires:
 1. Version increment (patch minimum)
 2. Changelog entry
 3. Consumer notification
 
 ---
 
-## 5. CLI Consumption
+## 🖥️ CLI Consumption
 
-The Agentics CLI validates all requests against contracts BEFORE making network calls.
-
-### 5.1 Local Validation Flow
+The Agentics CLI validates all requests against contracts **before** making network calls.
 
 ```
-+------------------+     +------------------+     +------------------+
-|   User Command   | --> |  Load Contract   | --> |    Validate      |
-|   (agentics run) |     |  from package    |     |    Request       |
-+------------------+     +------------------+     +------------------+
-                                                          |
-                         +------------------+             |
-                         |   Network Call   | <-----------+
-                         |   (if valid)     |      (only if valid)
-                         +------------------+
+┌──────────────┐     ┌──────────────┐     ┌──────────────┐
+│ 📝 User      │ ──→ │ 📜 Load      │ ──→ │ ✅ Validate  │
+│ Command      │     │ Contract     │     │ Request      │
+└──────────────┘     └──────────────┘     └──────┬───────┘
+                                                  │
+                     ┌──────────────┐             │ only if valid
+                     │ 🌐 Network   │ ←───────────┘
+                     │ Call         │
+                     └──────────────┘
 ```
-
-### 5.2 CLI Integration Example
 
 ```javascript
-const contracts = require('@agentics/contracts');
+const contracts = require('@llm-dev-ops/contracts');
 const Ajv = require('ajv');
 const ajv = new Ajv();
 
-// Load the schema
 const schemaPath = contracts.getSchema('simulation', 'v1', 'request');
-const schema = require(schemaPath);
+const validate = ajv.compile(require(schemaPath));
 
-// Compile validator
-const validate = ajv.compile(schema);
-
-// Validate before sending
 function sendSimulationRequest(request) {
-  const valid = validate(request);
-
-  if (!valid) {
-    console.error('Contract validation failed:', validate.errors);
-    process.exit(1);  // HARD FAILURE - no bypass
+  if (!validate(request)) {
+    console.error('❌ Contract validation failed:', validate.errors);
+    process.exit(1);  // HARD FAILURE — no bypass
   }
-
-  return fetch('/api/simulation', {
-    method: 'POST',
-    body: JSON.stringify(request)
-  });
+  return fetch('/api/simulation', { method: 'POST', body: JSON.stringify(request) });
 }
 ```
 
-### 5.3 CLI Validation Commands
+### CLI Commands
 
 ```bash
 # Validate a request payload against a contract
 agentics validate --schema simulation/v1/request --file request.json
 
-# Validate with verbose output
-agentics validate --schema simulation/v1/request --file request.json --verbose
-
-# Validate from stdin
-cat request.json | agentics validate --schema simulation/v1/request
-
 # List all available contracts
 agentics contracts list
 
 # Show contract schema
-agentics contracts show simulation/v1/request
-```
-
-### 5.4 Offline Validation
-
-The CLI can validate completely offline using the bundled contracts:
-
-```bash
-# Works without network connectivity
-agentics validate --schema execution/v1/execution-graph --file graph.json --offline
+agentics contracts show lifecycle/v1/simulation-lifecycle
 ```
 
 ---
 
-## 6. Service Consumption
+## ⚙️ Service Consumption
 
-Every service in the platform MUST validate incoming requests and outgoing responses.
+Every service MUST validate incoming requests **and** outgoing responses.
 
-### 6.1 Service Validation Architecture
-
-```
-+------------------+     +------------------+     +------------------+
-|  Incoming        | --> |  Contract        | --> |   Business       |
-|  Request         |     |  Validation      |     |   Logic          |
-+------------------+     +------------------+     +------------------+
-                               |                         |
-                               | REJECT if invalid       |
-                               v                         v
-                         +------------------+     +------------------+
-                         |   400 Bad        |     |   Contract       |
-                         |   Request        |     |   Validation     |
-                         +------------------+     +------------------+
-                                                         |
-                                                         | REJECT if invalid
-                                                         v
-                                                   +------------------+
-                                                   |   Outgoing       |
-                                                   |   Response       |
-                                                   +------------------+
-```
-
-### 6.2 Service Integration Example (Node.js)
+### Node.js Express Middleware
 
 ```javascript
-const contracts = require('@agentics/contracts');
+const contracts = require('@llm-dev-ops/contracts');
 const Ajv = require('ajv');
 const addFormats = require('ajv-formats');
 
-class ContractValidator {
-  constructor() {
-    this.ajv = new Ajv({ allErrors: true });
-    addFormats(this.ajv);
-    this.validators = new Map();
-  }
+const ajv = new Ajv({ allErrors: true });
+addFormats(ajv);
 
-  getValidator(domain, version, schemaName) {
-    const key = `${domain}/${version}/${schemaName}`;
-
-    if (!this.validators.has(key)) {
-      const schemaPath = contracts.getSchema(domain, version, schemaName);
-      if (!schemaPath) {
-        throw new Error(`Unknown contract: ${key}`);
-      }
-      const schema = require(schemaPath);
-      this.validators.set(key, this.ajv.compile(schema));
-    }
-
-    return this.validators.get(key);
-  }
-
-  validate(domain, version, schemaName, data) {
-    const validator = this.getValidator(domain, version, schemaName);
-    const valid = validator(data);
-
-    return {
-      valid,
-      errors: valid ? null : validator.errors
-    };
-  }
-}
-
-// Middleware for Express
 function contractMiddleware(domain, version, schemaName) {
-  const validator = new ContractValidator();
+  const schemaPath = contracts.getSchema(domain, version, schemaName);
+  const validate = ajv.compile(require(schemaPath));
 
   return (req, res, next) => {
-    const result = validator.validate(domain, version, schemaName, req.body);
-
-    if (!result.valid) {
+    if (!validate(req.body)) {
       return res.status(400).json({
         error: 'CONTRACT_VALIDATION_FAILED',
-        message: 'Request does not conform to contract',
         contract: `${domain}/${version}/${schemaName}`,
-        violations: result.errors
+        violations: validate.errors
       });
     }
-
     next();
   };
 }
 
-// Usage
 app.post('/api/simulation',
   contractMiddleware('simulation', 'v1', 'request'),
-  async (req, res) => {
-    // Business logic here - request is guaranteed valid
-  }
+  async (req, res) => { /* ✅ Request is guaranteed valid */ }
 );
 ```
 
-### 6.3 Service Integration Example (Python)
+### Python (FastAPI)
 
 ```python
 import json
 from pathlib import Path
 from jsonschema import validate, ValidationError
+from fastapi import Request, HTTPException
 
 class ContractValidator:
     def __init__(self, contracts_path: str):
-        self.contracts_path = Path(contracts_path)
+        self.base = Path(contracts_path)
         self._cache = {}
 
     def get_schema(self, domain: str, version: str, name: str) -> dict:
         key = f"{domain}/{version}/{name}"
-
         if key not in self._cache:
-            schema_path = self.contracts_path / domain / version / f"{name}.schema.json"
-            with open(schema_path) as f:
-                self._cache[key] = json.load(f)
-
+            path = self.base / domain / version / f"{name}.schema.json"
+            self._cache[key] = json.loads(path.read_text())
         return self._cache[key]
 
-    def validate(self, domain: str, version: str, name: str, data: dict) -> None:
-        """Raises ValidationError if invalid"""
-        schema = self.get_schema(domain, version, name)
-        validate(instance=data, schema=schema)
-
-# FastAPI middleware
-from fastapi import Request, HTTPException
-
-validator = ContractValidator('/path/to/node_modules/@agentics/contracts')
-
-async def validate_contract(request: Request, domain: str, version: str, name: str):
-    body = await request.json()
-    try:
-        validator.validate(domain, version, name, body)
-    except ValidationError as e:
-        raise HTTPException(
-            status_code=400,
-            detail={
-                'error': 'CONTRACT_VALIDATION_FAILED',
-                'contract': f'{domain}/{version}/{name}',
-                'message': str(e.message)
-            }
-        )
-```
-
-### 6.4 Response Validation
-
-Services MUST also validate outgoing responses:
-
-```javascript
-function sendResponse(res, domain, version, schemaName, data) {
-  const result = validator.validate(domain, version, schemaName, data);
-
-  if (!result.valid) {
-    // Log the violation - this is a service bug
-    logger.error('Response contract violation', {
-      contract: `${domain}/${version}/${schemaName}`,
-      errors: result.errors,
-      data: data
-    });
-
-    // Return generic error to client
-    return res.status(500).json({
-      error: 'INTERNAL_CONTRACT_VIOLATION',
-      message: 'Response failed contract validation'
-    });
-  }
-
-  return res.json(data);
-}
+    def validate(self, domain: str, version: str, name: str, data: dict):
+        validate(instance=data, schema=self.get_schema(domain, version, name))
 ```
 
 ---
 
-## 7. Execution Graph Proof
+## 🔗 Execution Graph Proof
 
 The execution graph is the cryptographic proof that a request traversed all required layers.
 
-### 7.1 Why Execution Graphs Exist
+### Why Execution Graphs Exist
 
-In a multi-layer architecture, it's critical to prove:
+| Guarantee | How |
+|-----------|-----|
+| 🔒 All required layers participated | Layer entries are mandatory |
+| 📊 Correct execution order | Entry/exit timestamps enforce sequence |
+| 🔐 Data integrity | SHA-256 hash chain between layers |
+| ⏱️ Timing accountability | Per-layer execution time recorded |
 
-1. **All required layers participated** - No layer was bypassed
-2. **Order of execution** - Layers executed in correct sequence
-3. **Data integrity** - Input/output was not tampered between layers
-4. **Timing** - Each layer's execution time is recorded
-
-### 7.2 Execution Graph Structure
+### Structure
 
 ```json
 {
@@ -760,330 +566,42 @@ In a multi-layer architecture, it's critical to prove:
       "exitTime": "2024-01-15T10:30:00.150Z",
       "status": "completed",
       "inputHash": "sha256:abc123...",
-      "outputHash": "sha256:def456...",
-      "metadata": {
-        "checksPerformed": ["prompt-injection", "jailbreak"],
-        "threatLevel": "none"
-      }
-    },
-    {
-      "layerId": "layer-1-sentinel",
-      "service": "LLM-Sentinel",
-      "version": "1.8.0",
-      "entryTime": "2024-01-15T10:30:00.160Z",
-      "exitTime": "2024-01-15T10:30:00.200Z",
-      "status": "completed",
-      "inputHash": "sha256:def456...",
-      "outputHash": "sha256:ghi789...",
-      "metadata": {}
+      "outputHash": "sha256:def456..."
     }
   ],
-  "requiredLayers": ["LLM-Shield", "LLM-Sentinel", "LLM-Policy-Engine"],
-  "missingLayers": [],
-  "rootHash": "sha256:merkle-root-of-all-layer-hashes",
+  "rootHash": "sha256:merkle-root",
   "valid": true
 }
 ```
 
-### 7.3 Building the Execution Graph
-
-Each layer adds its entry to the graph:
-
-```javascript
-class ExecutionGraphBuilder {
-  constructor(executionId) {
-    this.graph = {
-      executionId,
-      timestamp: new Date().toISOString(),
-      layers: [],
-      requiredLayers: [],
-      missingLayers: [],
-      rootHash: null,
-      valid: false
-    };
-  }
-
-  addLayer(layerEntry) {
-    // Verify chain integrity
-    if (this.graph.layers.length > 0) {
-      const lastLayer = this.graph.layers[this.graph.layers.length - 1];
-      if (layerEntry.inputHash !== lastLayer.outputHash) {
-        throw new Error('Execution graph chain broken');
-      }
-    }
-
-    this.graph.layers.push(layerEntry);
-  }
-
-  finalize(requiredLayers) {
-    this.graph.requiredLayers = requiredLayers;
-
-    const presentLayers = new Set(this.graph.layers.map(l => l.service));
-    this.graph.missingLayers = requiredLayers.filter(l => !presentLayers.has(l));
-
-    this.graph.rootHash = this.computeMerkleRoot();
-    this.graph.valid = this.graph.missingLayers.length === 0;
-
-    return this.graph;
-  }
-
-  computeMerkleRoot() {
-    const hashes = this.graph.layers.map(l => l.outputHash);
-    // Compute Merkle root from layer hashes
-    return computeMerkle(hashes);
-  }
-}
-```
-
-### 7.4 Validating Execution Graphs
-
-Consumers validate that the execution graph proves layer participation:
-
-```javascript
-function validateExecutionGraph(graph, requiredLayers) {
-  // 1. Check all required layers are present
-  const presentLayers = new Set(graph.layers.map(l => l.service));
-  const missing = requiredLayers.filter(l => !presentLayers.has(l));
-
-  if (missing.length > 0) {
-    throw new Error(`Missing required layers: ${missing.join(', ')}`);
-  }
-
-  // 2. Verify hash chain integrity
-  for (let i = 1; i < graph.layers.length; i++) {
-    if (graph.layers[i].inputHash !== graph.layers[i-1].outputHash) {
-      throw new Error(`Hash chain broken at layer ${i}`);
-    }
-  }
-
-  // 3. Verify Merkle root
-  const computedRoot = computeMerkleRoot(graph.layers);
-  if (computedRoot !== graph.rootHash) {
-    throw new Error('Merkle root verification failed');
-  }
-
-  return true;
-}
-```
-
-### 7.5 Execution Graph in Responses
-
-Every API response MUST include the execution graph:
-
-```json
-{
-  "data": {
-    "simulationId": "...",
-    "results": {}
-  },
-  "executionGraph": {
-    "executionId": "...",
-    "layers": [...],
-    "rootHash": "...",
-    "valid": true
-  }
-}
-```
+Every API response MUST include an execution graph proving layer participation.
 
 ---
 
-## 8. Enforcement Model
+## 🛡️ Enforcement Model
 
-### 8.1 Core Principle: No Optional Participation
+### 🚨 Core Principle: No Optional Participation
 
-Every layer in the platform MUST participate in request processing. There is no concept of "optional" layers. If a layer is defined in the architecture, it MUST:
+Every layer defined in the architecture MUST participate. There is no concept of "degraded mode."
 
-1. Receive the request
-2. Process according to its responsibility
-3. Add its entry to the execution graph
-4. Pass to the next layer
+- 🔒 **Security layers** (Shield, Sentinel) — cannot be bypassed for performance
+- ⚖️ **Governance layers** (Policy-Engine) — cannot be bypassed for convenience
+- 📊 **Observability layers** (Observatory) — cannot be bypassed to reduce overhead
 
-### 8.2 Failure Modes
+### Failure Modes
 
-| Scenario | Result | Recovery |
-|----------|--------|----------|
-| Request fails contract validation | **400 Bad Request** | Fix request format |
-| Required layer unreachable | **503 Service Unavailable** | Retry with backoff |
-| Layer rejects request (e.g., policy violation) | **403 Forbidden** | Address policy issue |
-| Layer times out | **504 Gateway Timeout** | Retry or escalate |
-| Response fails contract validation | **500 Internal Error** | Service bug - escalate |
-| Execution graph missing layers | **502 Bad Gateway** | Infrastructure issue |
+| Scenario | HTTP | Recovery |
+|----------|:----:|----------|
+| Request fails validation | `400` | Fix request format |
+| Required layer unreachable | `503` | Retry with backoff |
+| Layer rejects (policy violation) | `403` | Address policy issue |
+| Layer times out | `504` | Retry or escalate |
+| Response fails validation | `500` | Service bug — escalate |
+| Execution graph missing layers | `502` | Infrastructure issue |
 
-### 8.3 Enforcement Points
-
-```
-Request Flow:
-
-  Client ──> API Gateway ──> Layer 1 ──> Layer 2 ──> Layer 3 ──> Response
-                │                │           │           │           │
-                ▼                ▼           ▼           ▼           ▼
-           [Validate]      [Validate]   [Validate]  [Validate]  [Validate]
-           [Contract]      [Contract]   [Contract]  [Contract]  [Contract]
-                │                │           │           │           │
-                ▼                ▼           ▼           ▼           ▼
-           REJECT if        REJECT if   REJECT if   REJECT if   REJECT if
-            invalid          invalid     invalid     invalid     invalid
-```
-
-### 8.4 No Degraded Mode
-
-The platform does NOT support "degraded mode" where some layers are skipped. This is intentional:
-
-- **Security layers** (Shield, Sentinel) cannot be bypassed for "performance"
-- **Governance layers** (Policy-Engine) cannot be bypassed for "convenience"
-- **Observability layers** (Observatory) cannot be bypassed to "reduce overhead"
-
-If a layer is required, it is ALWAYS required.
-
-### 8.5 Circuit Breaker Behavior
-
-When a layer fails repeatedly, the circuit breaker opens:
-
-```javascript
-class LayerCircuitBreaker {
-  constructor(layer, threshold = 5, resetTimeout = 30000) {
-    this.layer = layer;
-    this.failures = 0;
-    this.threshold = threshold;
-    this.resetTimeout = resetTimeout;
-    this.state = 'CLOSED';  // CLOSED, OPEN, HALF_OPEN
-  }
-
-  async execute(request) {
-    if (this.state === 'OPEN') {
-      // Don't bypass - fail fast
-      throw new Error(`Layer ${this.layer} circuit is OPEN`);
-    }
-
-    try {
-      const result = await this.layer.process(request);
-      this.onSuccess();
-      return result;
-    } catch (error) {
-      this.onFailure();
-      throw error;
-    }
-  }
-
-  onFailure() {
-    this.failures++;
-    if (this.failures >= this.threshold) {
-      this.state = 'OPEN';
-      setTimeout(() => this.state = 'HALF_OPEN', this.resetTimeout);
-    }
-  }
-
-  onSuccess() {
-    this.failures = 0;
-    this.state = 'CLOSED';
-  }
-}
-```
-
-**Key point**: The circuit breaker causes FAST FAILURE, not bypass.
-
----
-
-## 9. What Belongs Here
-
-### 9.1 ONLY These Artifacts Belong in This Repository
-
-| Artifact | Example | Belongs Here |
-|----------|---------|--------------|
-| JSON Schema files | `*.schema.json` | YES |
-| Schema documentation | Inline in schemas | YES |
-| TypeScript type declarations | `index.d.ts` | YES |
-| Package entry point | `index.js` | YES |
-| Schema validation scripts | `npm run validate` | YES |
-| Version changelog | `CHANGELOG.md` | YES |
-
-### 9.2 These Artifacts Do NOT Belong Here
-
-| Artifact | Where It Belongs |
-|----------|------------------|
-| Runtime validation logic | Service repositories |
-| Business rules | Service repositories |
-| Environment configuration | Deployment repositories |
-| API implementations | Service repositories |
-| Database schemas | Service repositories |
-| Infrastructure code | Infrastructure repositories |
-| CI/CD pipelines | `.github/` in each repo |
-| Application secrets | Secret management system |
-| User documentation | Documentation repository |
-
-### 9.3 Schema Design Rules
-
-Schemas in this repository MUST:
-
-1. **Be pure validation** - No business logic encoded in schemas
-2. **Be deterministic** - Same input always produces same validation result
-3. **Be self-contained** - Minimize external `$ref` dependencies
-4. **Be documented** - Include `description` for all fields
-5. **Be testable** - Include `examples` for valid payloads
-
-Schemas in this repository MUST NOT:
-
-1. **Contain default values that encode business rules**
-2. **Reference external URLs** (all refs must be local)
-3. **Include conditional logic based on environment**
-4. **Embed API endpoints or service URLs**
-5. **Include authentication/authorization logic**
-
-### 9.4 Example: Good vs Bad Schema Design
-
-**GOOD** - Pure validation:
-```json
-{
-  "type": "object",
-  "properties": {
-    "amount": {
-      "type": "number",
-      "minimum": 0,
-      "description": "Transaction amount in base currency units"
-    }
-  },
-  "required": ["amount"]
-}
-```
-
-**BAD** - Business logic embedded:
-```json
-{
-  "type": "object",
-  "properties": {
-    "amount": {
-      "type": "number",
-      "minimum": 0,
-      "maximum": 10000,
-      "default": 100,
-      "description": "Max $10,000 per company policy P-1234"
-    }
-  }
-}
-```
-
-The maximum limit and default are business rules that belong in the service, not the contract.
-
----
-
-## 10. Prohibition on Bypassing
-
-### 10.1 Absolute Prohibition
+### 🚫 Prohibition on Bypassing
 
 **IT IS STRICTLY FORBIDDEN TO BYPASS CONTRACT VALIDATION.**
-
-This prohibition applies to:
-
-- All services in all layers
-- All CLI commands
-- All API gateways
-- All internal tools
-- All debugging scenarios
-- All "emergency" situations
-
-### 10.2 No Exceptions
-
-There are no valid exceptions to contract validation:
 
 | Attempted Justification | Response |
 |------------------------|----------|
@@ -1091,198 +609,108 @@ There are no valid exceptions to contract validation:
 | "The schema is too strict" | Fix the schema or fix your data |
 | "Performance is critical" | Validation is measured in microseconds |
 | "It's an emergency" | Emergencies don't justify invalid data |
-| "The old system didn't require this" | The old system is not the standard |
 | "My team doesn't have time" | Invalid data costs more time to debug |
 
-### 10.3 Detection and Response
-
-Bypass attempts are detected through:
-
-1. **Missing execution graph entries** - Indicates a layer was skipped
-2. **Hash chain breaks** - Indicates tampering between layers
-3. **Direct database access** - Bypasses all validation layers
-4. **Unsigned requests** - Missing cryptographic proof of layer processing
-
-Response to detected bypasses:
-
-1. **Immediate request rejection** - Invalid requests are not processed
-2. **Incident creation** - Security team is notified
-3. **Audit logging** - Full details recorded for investigation
-4. **Escalation** - Repeated attempts trigger escalation procedures
-
-### 10.4 Code Review Requirements
-
-All code changes MUST be reviewed for contract compliance:
-
-```markdown
-## Contract Compliance Checklist
-
-- [ ] All request handlers validate against contracts
-- [ ] All response builders validate against contracts
-- [ ] No hardcoded bypasses of validation
-- [ ] No environment flags that disable validation
-- [ ] Execution graph entries are added correctly
-- [ ] Error responses conform to error contracts
-```
-
-### 10.5 Consequences of Bypassing
-
-Bypassing contract validation is treated as a **critical security incident**:
-
-1. The bypassing code path will be immediately disabled
-2. An incident review will be conducted
-3. Remediation will be required before re-enabling
-4. Patterns will be added to prevent recurrence
+Detected bypass attempts trigger: immediate rejection → incident creation → audit logging → escalation.
 
 ---
 
-## 11. Installation and Usage
+## 📐 Schema Design Rules
 
-### 11.1 Installation
+### ✅ Schemas MUST
 
-```bash
-npm install @agentics/contracts
-```
+1. Be **pure validation** — no business logic
+2. Be **deterministic** — same input → same result
+3. Be **self-contained** — minimize external `$ref` dependencies
+4. Be **documented** — `description` for all fields
+5. Be **testable** — include valid examples
 
-### 11.2 Basic Usage (Node.js)
+### ❌ Schemas MUST NOT
 
-```javascript
-const contracts = require('@agentics/contracts');
-
-// Get schema path
-const schemaPath = contracts.getSchema('simulation', 'v1', 'request');
-console.log(schemaPath);
-// Output: /path/to/node_modules/@agentics/contracts/simulation/v1/request.schema.json
-
-// Load schema
-const schema = require(schemaPath);
-
-// List all domains
-console.log(contracts.getDomains());
-// Output: ['execution', 'simulation', 'intent', 'exporters', 'diligence', 'roi', 'governance']
-
-// List versions for a domain
-console.log(contracts.getVersions('simulation'));
-// Output: ['v1']
-
-// List schemas in a version
-console.log(contracts.getSchemaNames('simulation', 'v1'));
-// Output: ['request', 'response', 'errors']
-```
-
-### 11.3 Validation with AJV
-
-```javascript
-const contracts = require('@agentics/contracts');
-const Ajv = require('ajv');
-const addFormats = require('ajv-formats');
-
-const ajv = new Ajv({ allErrors: true });
-addFormats(ajv);
-
-// Load and compile schema
-const schemaPath = contracts.getSchema('simulation', 'v1', 'request');
-const schema = require(schemaPath);
-const validate = ajv.compile(schema);
-
-// Validate data
-const data = {
-  simulationId: '550e8400-e29b-41d4-a716-446655440000',
-  scenario: {
-    name: 'cost-optimization',
-    parameters: { targetReduction: 0.2 },
-    constraints: []
-  }
-};
-
-const valid = validate(data);
-if (!valid) {
-  console.error('Validation errors:', validate.errors);
-}
-```
-
-### 11.4 TypeScript Usage
-
-```typescript
-import contracts = require('@agentics/contracts');
-
-// Full type support
-const path: string | undefined = contracts.getSchema('simulation', 'v1', 'request');
-const domains: string[] = contracts.getDomains();
-const version: string = contracts.version;
-```
-
-### 11.5 Direct Schema Import
-
-```javascript
-// Import schema directly using package exports
-const executionGraph = require('@agentics/contracts/execution/v1/execution-graph.schema.json');
-const simulationRequest = require('@agentics/contracts/simulation/v1/request.schema.json');
-```
-
-### 11.6 Schema Validation Scripts
-
-```bash
-# Validate all schemas are syntactically correct
-npm run validate
-
-# Run before publishing
-npm run prepublishOnly
-```
+1. Contain default values encoding business rules
+2. Reference external URLs (all refs must be local)
+3. Include conditional logic based on environment
+4. Embed API endpoints or service URLs
+5. Include authentication/authorization logic
 
 ---
 
-## Contributing
+## 🤝 Contributing
 
 ### Adding New Schemas
 
-1. Create schema file in appropriate directory: `{domain}/v1/{name}.schema.json`
-2. Follow JSON Schema Draft 2020-12 specification
+1. Create schema in `{domain}/v1/{name}.schema.json`
+2. Follow **JSON Schema Draft 07** specification
 3. Include `$id`, `$schema`, `title`, and `description`
 4. Add comprehensive field descriptions
-5. Include valid and invalid examples
-6. Update `index.js` to expose the schema
-7. Update `index.d.ts` with type declarations
-8. Run `npm run validate` to verify
+5. Update `index.js` to register the schema
+6. Update `index.d.ts` with type declarations
+7. Run `npm run validate` to verify
 
 ### Schema Template
 
 ```json
 {
-  "$id": "https://agentics.dev/contracts/{domain}/v1/{name}.schema.json",
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://agentics.org/schemas/{domain}/v1/{name}.schema.json",
   "title": "{Schema Title}",
   "description": "Detailed description of what this schema validates",
   "type": "object",
   "properties": {
-    "exampleField": {
+    "example_field": {
       "type": "string",
       "description": "Description of this field"
     }
   },
-  "required": ["exampleField"],
-  "examples": [
-    {
-      "exampleField": "valid-value"
-    }
-  ]
+  "required": ["example_field"],
+  "additionalProperties": false
 }
 ```
 
----
+### Contract Compliance Checklist
 
-## License
-
-MIT License - See LICENSE file for details.
-
----
-
-## Contact
-
-- **Repository**: https://github.com/agentics/agentics-contracts
-- **Issues**: https://github.com/agentics/agentics-contracts/issues
-- **Team**: Agentics Platform Team
+- [ ] All request handlers validate against contracts
+- [ ] All response builders validate against contracts
+- [ ] No hardcoded bypasses of validation
+- [ ] No environment flags that disable validation
+- [ ] Execution graph entries added correctly
+- [ ] Error responses conform to error contracts
 
 ---
 
-**Remember: These contracts are LAW. No bypass. No exceptions. No excuses.**
+## 📄 License Terms
+
+**Copyright © 2025 Global Business Advisors. All rights reserved.**
+
+This software and associated documentation files (the "Software") are the proprietary property of Global Business Advisors.
+
+### Permitted (with valid license)
+
+- ✅ Use in internal development and testing environments
+- ✅ Integration into licensed production systems
+- ✅ Schema validation in downstream services
+
+### Prohibited (without written authorization)
+
+- ❌ Redistribution or sublicensing
+- ❌ Use in production environments without a commercial license
+- ❌ Modification of schema `$id` URIs or authorship metadata
+- ❌ Removal of license notices from source files
+
+### Obtaining a License
+
+Contact **[sales@globalbusinessadvisors.co](mailto:sales@globalbusinessadvisors.co)** to obtain a commercial, academic, or open-source integration license.
+
+Use of this package constitutes acceptance of these terms.
+
+---
+
+<p align="center">
+  <strong>📜 These contracts are LAW. No bypass. No exceptions. No excuses.</strong>
+</p>
+
+<p align="center">
+  <a href="https://github.com/LLM-Dev-Ops/agentics-contracts/issues">🐛 Report Issue</a> ·
+  <a href="mailto:sales@globalbusinessadvisors.co">📧 Contact</a> ·
+  <a href="https://github.com/LLM-Dev-Ops">🏠 LLM-Dev-Ops</a>
+</p>

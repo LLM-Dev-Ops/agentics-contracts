@@ -114,5 +114,5 @@ module.exports = {
    * Package version - follows semver.
    * Breaking changes require major version bump.
    */
-  version: '1.1.0'
+  version: '1.1.1'
 };
