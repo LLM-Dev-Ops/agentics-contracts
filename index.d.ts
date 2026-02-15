@@ -88,6 +88,19 @@ declare module '@agentics/contracts' {
   }
 
   /**
+   * Lifecycle domain schemas
+   */
+  interface LifecycleSchemas {
+    v1: {
+      simulationLifecycle: string;
+      deploymentLifecycle: string;
+      policyLifecycle: string;
+      roiLifecycle: string;
+      erpLifecycle: string;
+    };
+  }
+
+  /**
    * Complete schema registry type
    */
   interface Schemas {
@@ -98,6 +111,7 @@ declare module '@agentics/contracts' {
     diligence: DiligenceSchemas;
     roi: RoiSchemas;
     governance: GovernanceSchemas;
+    lifecycle: LifecycleSchemas;
   }
 
   /**

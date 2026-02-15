@@ -1,0 +1,227 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://agentics.org/schemas/lifecycle/v1/simulation-lifecycle.schema.json",
+  "title": "Simulation Lifecycle Spec",
+  "description": "Canonical lifecycle stages for simulation execution. All downstream repos must consume this contract to ensure consistent lifecycle tracking across the platform.",
+  "type": "object",
+  "properties": {
+    "simulation_id": {
+      "type": "string",
+      "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$",
+      "description": "Unique identifier for this simulation lifecycle instance"
+    },
+    "contract_version": {
+      "type": "string",
+      "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$",
+      "description": "Semantic version of the contract this lifecycle conforms to"
+    },
+    "current_stage": {
+      "$ref": "#/definitions/simulation_stage",
+      "description": "The current active stage in the lifecycle"
+    },
+    "stages": {
+      "type": "object",
+      "properties": {
+        "simulation_requested": {
+          "$ref": "#/definitions/stage_record",
+          "description": "A simulation run has been formally requested"
+        },
+        "plan_created": {
+          "$ref": "#/definitions/stage_record",
+          "description": "A simulation plan has been generated from the request"
+        },
+        "plan_evaluated": {
+          "$ref": "#/definitions/stage_record",
+          "description": "The simulation plan has been evaluated for feasibility and risk"
+        },
+        "plan_approved": {
+          "$ref": "#/definitions/stage_record",
+          "description": "The simulation plan has received required approvals"
+        },
+        "execution_started": {
+          "$ref": "#/definitions/stage_record",
+          "description": "Simulation execution has begun"
+        },
+        "execution_completed": {
+          "$ref": "#/definitions/stage_record",
+          "description": "Simulation execution has finished (success or failure)"
+        },
+        "telemetry_recorded": {
+          "$ref": "#/definitions/stage_record",
+          "description": "Telemetry data from the simulation has been persisted"
+        },
+        "cost_recorded": {
+          "$ref": "#/definitions/stage_record",
+          "description": "Resource and financial costs have been captured"
+        },
+        "governance_recorded": {
+          "$ref": "#/definitions/stage_record",
+          "description": "Governance and compliance artifacts have been recorded"
+        },
+        "results_indexed": {
+          "$ref": "#/definitions/stage_record",
+          "description": "Simulation results have been indexed for querying and analysis"
+        }
+      },
+      "required": [
+        "simulation_requested"
+      ],
+      "additionalProperties": false
+    },
+    "metadata": {
+      "$ref": "#/definitions/lifecycle_metadata"
+    }
+  },
+  "required": [
+    "simulation_id",
+    "contract_version",
+    "current_stage",
+    "stages"
+  ],
+  "additionalProperties": false,
+  "definitions": {
+    "simulation_stage": {
+      "type": "string",
+      "enum": [
+        "simulation_requested",
+        "plan_created",
+        "plan_evaluated",
+        "plan_approved",
+        "execution_started",
+        "execution_completed",
+        "telemetry_recorded",
+        "cost_recorded",
+        "governance_recorded",
+        "results_indexed"
+      ],
+      "description": "Ordered stages in the simulation lifecycle"
+    },
+    "stage_record": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": ["pending", "in_progress", "completed", "failed", "skipped"],
+          "description": "Current status of this stage"
+        },
+        "entered_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "ISO 8601 timestamp when this stage was entered"
+        },
+        "completed_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "ISO 8601 timestamp when this stage completed"
+        },
+        "initiated_by": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256,
+          "description": "Principal or service that triggered this stage transition"
+        },
+        "error": {
+          "$ref": "#/definitions/stage_error"
+        },
+        "artifacts": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/stage_artifact"
+          },
+          "description": "References to artifacts produced during this stage"
+        }
+      },
+      "required": ["status"],
+      "additionalProperties": false
+    },
+    "stage_error": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "description": "Machine-readable error code"
+        },
+        "message": {
+          "type": "string",
+          "maxLength": 2048,
+          "description": "Human-readable error message"
+        },
+        "recoverable": {
+          "type": "boolean",
+          "description": "Whether the lifecycle can retry or recover from this error"
+        }
+      },
+      "required": ["code", "message"],
+      "additionalProperties": false
+    },
+    "stage_artifact": {
+      "type": "object",
+      "properties": {
+        "artifact_type": {
+          "type": "string",
+          "enum": [
+            "plan",
+            "evaluation_report",
+            "approval_record",
+            "execution_graph",
+            "telemetry_bundle",
+            "cost_report",
+            "governance_report",
+            "result_index"
+          ],
+          "description": "Type of artifact produced"
+        },
+        "artifact_id": {
+          "type": "string",
+          "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+        },
+        "uri": {
+          "type": "string",
+          "format": "uri",
+          "description": "Location of the artifact"
+        }
+      },
+      "required": ["artifact_type", "artifact_id"],
+      "additionalProperties": false
+    },
+    "lifecycle_metadata": {
+      "type": "object",
+      "properties": {
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "created_by": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "execution_id": {
+          "type": "string",
+          "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$",
+          "description": "Correlation ID linking to the execution graph"
+        },
+        "environment": {
+          "type": "string",
+          "enum": ["development", "testing", "staging", "production", "sandbox"],
+          "description": "Target environment for this lifecycle"
+        },
+        "tags": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Arbitrary key-value tags for filtering and grouping"
+        }
+      },
+      "required": ["created_at", "created_by"],
+      "additionalProperties": false
+    }
+  }
+}

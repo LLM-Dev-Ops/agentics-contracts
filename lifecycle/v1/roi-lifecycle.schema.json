@@ -1,0 +1,218 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://agentics.org/schemas/lifecycle/v1/roi-lifecycle.schema.json",
+  "title": "ROI Lifecycle Spec",
+  "description": "Canonical lifecycle stages for return-on-investment analysis. Tracks ROI calculations from data collection through projection, validation, and reporting.",
+  "type": "object",
+  "properties": {
+    "roi_lifecycle_id": {
+      "type": "string",
+      "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$",
+      "description": "Unique identifier for this ROI lifecycle instance"
+    },
+    "contract_version": {
+      "type": "string",
+      "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$"
+    },
+    "current_stage": {
+      "$ref": "#/definitions/roi_stage"
+    },
+    "stages": {
+      "type": "object",
+      "properties": {
+        "analysis_requested": {
+          "$ref": "#/definitions/stage_record",
+          "description": "ROI analysis has been formally requested"
+        },
+        "baseline_captured": {
+          "$ref": "#/definitions/stage_record",
+          "description": "Current-state cost and performance baselines have been captured"
+        },
+        "cost_data_collected": {
+          "$ref": "#/definitions/stage_record",
+          "description": "All cost inputs (compute, license, labor) have been gathered"
+        },
+        "benefit_data_collected": {
+          "$ref": "#/definitions/stage_record",
+          "description": "All benefit metrics (throughput, savings, quality) have been gathered"
+        },
+        "projection_calculated": {
+          "$ref": "#/definitions/stage_record",
+          "description": "ROI projections and payback period have been calculated"
+        },
+        "projection_validated": {
+          "$ref": "#/definitions/stage_record",
+          "description": "Projections have been validated against actuals or benchmarks"
+        },
+        "report_generated": {
+          "$ref": "#/definitions/stage_record",
+          "description": "The ROI report has been generated"
+        },
+        "stakeholder_reviewed": {
+          "$ref": "#/definitions/stage_record",
+          "description": "Stakeholders have reviewed and acknowledged the analysis"
+        },
+        "governance_recorded": {
+          "$ref": "#/definitions/stage_record",
+          "description": "Governance artifacts for the ROI analysis have been filed"
+        },
+        "results_indexed": {
+          "$ref": "#/definitions/stage_record",
+          "description": "ROI results have been indexed for trend analysis and comparison"
+        }
+      },
+      "required": ["analysis_requested"],
+      "additionalProperties": false
+    },
+    "metadata": {
+      "$ref": "#/definitions/lifecycle_metadata"
+    }
+  },
+  "required": [
+    "roi_lifecycle_id",
+    "contract_version",
+    "current_stage",
+    "stages"
+  ],
+  "additionalProperties": false,
+  "definitions": {
+    "roi_stage": {
+      "type": "string",
+      "enum": [
+        "analysis_requested",
+        "baseline_captured",
+        "cost_data_collected",
+        "benefit_data_collected",
+        "projection_calculated",
+        "projection_validated",
+        "report_generated",
+        "stakeholder_reviewed",
+        "governance_recorded",
+        "results_indexed"
+      ]
+    },
+    "stage_record": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": ["pending", "in_progress", "completed", "failed", "skipped"]
+        },
+        "entered_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "completed_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "initiated_by": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "error": {
+          "$ref": "#/definitions/stage_error"
+        },
+        "artifacts": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/stage_artifact"
+          }
+        }
+      },
+      "required": ["status"],
+      "additionalProperties": false
+    },
+    "stage_error": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "message": {
+          "type": "string",
+          "maxLength": 2048
+        },
+        "recoverable": {
+          "type": "boolean"
+        }
+      },
+      "required": ["code", "message"],
+      "additionalProperties": false
+    },
+    "stage_artifact": {
+      "type": "object",
+      "properties": {
+        "artifact_type": {
+          "type": "string",
+          "enum": [
+            "baseline_snapshot",
+            "cost_breakdown",
+            "benefit_analysis",
+            "projection_model",
+            "validation_report",
+            "roi_report",
+            "stakeholder_sign_off",
+            "governance_report",
+            "trend_index"
+          ]
+        },
+        "artifact_id": {
+          "type": "string",
+          "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+        },
+        "uri": {
+          "type": "string",
+          "format": "uri"
+        }
+      },
+      "required": ["artifact_type", "artifact_id"],
+      "additionalProperties": false
+    },
+    "lifecycle_metadata": {
+      "type": "object",
+      "properties": {
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "created_by": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "analysis_type": {
+          "type": "string",
+          "enum": ["deployment", "migration", "optimization", "comparison"]
+        },
+        "time_horizon_months": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 120,
+          "description": "Projection time horizon in months"
+        },
+        "currency": {
+          "type": "string",
+          "pattern": "^[A-Z]{3}$",
+          "default": "USD",
+          "description": "ISO 4217 currency code"
+        },
+        "tags": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        }
+      },
+      "required": ["created_at", "created_by"],
+      "additionalProperties": false
+    }
+  }
+}

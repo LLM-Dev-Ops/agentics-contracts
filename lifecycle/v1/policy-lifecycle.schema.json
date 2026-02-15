@@ -1,0 +1,231 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://agentics.org/schemas/lifecycle/v1/policy-lifecycle.schema.json",
+  "title": "Policy Lifecycle Spec",
+  "description": "Canonical lifecycle stages for governance policy management. Tracks policies from authoring through enforcement and periodic review.",
+  "type": "object",
+  "properties": {
+    "policy_lifecycle_id": {
+      "type": "string",
+      "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$",
+      "description": "Unique identifier for this policy lifecycle instance"
+    },
+    "policy_id": {
+      "type": "string",
+      "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$",
+      "description": "The governed policy this lifecycle tracks"
+    },
+    "contract_version": {
+      "type": "string",
+      "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$"
+    },
+    "current_stage": {
+      "$ref": "#/definitions/policy_stage"
+    },
+    "stages": {
+      "type": "object",
+      "properties": {
+        "policy_drafted": {
+          "$ref": "#/definitions/stage_record",
+          "description": "Policy has been authored in draft form"
+        },
+        "policy_reviewed": {
+          "$ref": "#/definitions/stage_record",
+          "description": "Policy has undergone peer or compliance review"
+        },
+        "policy_approved": {
+          "$ref": "#/definitions/stage_record",
+          "description": "Policy has received required approvals for activation"
+        },
+        "policy_published": {
+          "$ref": "#/definitions/stage_record",
+          "description": "Policy has been published to the governance registry"
+        },
+        "enforcement_started": {
+          "$ref": "#/definitions/stage_record",
+          "description": "Policy enforcement has been activated across target services"
+        },
+        "compliance_verified": {
+          "$ref": "#/definitions/stage_record",
+          "description": "Initial compliance verification has been performed"
+        },
+        "audit_recorded": {
+          "$ref": "#/definitions/stage_record",
+          "description": "Audit trail for policy activation has been persisted"
+        },
+        "review_scheduled": {
+          "$ref": "#/definitions/stage_record",
+          "description": "Periodic review cycle has been scheduled"
+        },
+        "policy_expired": {
+          "$ref": "#/definitions/stage_record",
+          "description": "Policy has reached its expiration or been superseded"
+        },
+        "policy_archived": {
+          "$ref": "#/definitions/stage_record",
+          "description": "Policy has been archived for historical reference"
+        }
+      },
+      "required": ["policy_drafted"],
+      "additionalProperties": false
+    },
+    "metadata": {
+      "$ref": "#/definitions/lifecycle_metadata"
+    }
+  },
+  "required": [
+    "policy_lifecycle_id",
+    "policy_id",
+    "contract_version",
+    "current_stage",
+    "stages"
+  ],
+  "additionalProperties": false,
+  "definitions": {
+    "policy_stage": {
+      "type": "string",
+      "enum": [
+        "policy_drafted",
+        "policy_reviewed",
+        "policy_approved",
+        "policy_published",
+        "enforcement_started",
+        "compliance_verified",
+        "audit_recorded",
+        "review_scheduled",
+        "policy_expired",
+        "policy_archived"
+      ]
+    },
+    "stage_record": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": ["pending", "in_progress", "completed", "failed", "skipped"]
+        },
+        "entered_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "completed_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "initiated_by": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "error": {
+          "$ref": "#/definitions/stage_error"
+        },
+        "artifacts": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/stage_artifact"
+          }
+        }
+      },
+      "required": ["status"],
+      "additionalProperties": false
+    },
+    "stage_error": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "message": {
+          "type": "string",
+          "maxLength": 2048
+        },
+        "recoverable": {
+          "type": "boolean"
+        }
+      },
+      "required": ["code", "message"],
+      "additionalProperties": false
+    },
+    "stage_artifact": {
+      "type": "object",
+      "properties": {
+        "artifact_type": {
+          "type": "string",
+          "enum": [
+            "policy_document",
+            "review_report",
+            "approval_record",
+            "enforcement_config",
+            "compliance_report",
+            "audit_trail",
+            "review_schedule",
+            "archive_record"
+          ]
+        },
+        "artifact_id": {
+          "type": "string",
+          "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+        },
+        "uri": {
+          "type": "string",
+          "format": "uri"
+        }
+      },
+      "required": ["artifact_type", "artifact_id"],
+      "additionalProperties": false
+    },
+    "lifecycle_metadata": {
+      "type": "object",
+      "properties": {
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "created_by": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "enforcement_level": {
+          "type": "string",
+          "enum": ["strict", "warning", "audit"]
+        },
+        "compliance_frameworks": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "SOC2", "SOC2_TYPE_II", "HIPAA", "PCI_DSS", "GDPR", "CCPA",
+              "ISO_27001", "ISO_27017", "ISO_27018", "FedRAMP",
+              "NIST_800_53", "NIST_CSF", "CIS", "OWASP", "custom"
+            ]
+          },
+          "uniqueItems": true
+        },
+        "target_layers": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["foundational", "intelligence", "core", "integration_infra", "apex"]
+          },
+          "uniqueItems": true
+        },
+        "tags": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        }
+      },
+      "required": ["created_at", "created_by"],
+      "additionalProperties": false
+    }
+  }
+}

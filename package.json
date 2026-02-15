@@ -12,6 +12,7 @@
     "diligence/",
     "roi/",
     "governance/",
+    "lifecycle/",
     "index.js",
     "index.d.ts"
   ],
@@ -23,10 +24,11 @@
     "./exporters/v1/*": "./exporters/v1/*.schema.json",
     "./diligence/v1/*": "./diligence/v1/*.schema.json",
     "./roi/v1/*": "./roi/v1/*.schema.json",
-    "./governance/v1/*": "./governance/v1/*.schema.json"
+    "./governance/v1/*": "./governance/v1/*.schema.json",
+    "./lifecycle/v1/*": "./lifecycle/v1/*.schema.json"
   },
   "scripts": {
-    "validate": "ajv compile -s 'execution/**/*.schema.json' -s 'simulation/**/*.schema.json' -s 'intent/**/*.schema.json' -s 'exporters/**/*.schema.json' -s 'diligence/**/*.schema.json' -s 'roi/**/*.schema.json' -s 'governance/**/*.schema.json'",
+    "validate": "ajv compile -s 'execution/**/*.schema.json' -s 'simulation/**/*.schema.json' -s 'intent/**/*.schema.json' -s 'exporters/**/*.schema.json' -s 'diligence/**/*.schema.json' -s 'roi/**/*.schema.json' -s 'governance/**/*.schema.json' -s 'lifecycle/**/*.schema.json'",
     "test": "npm run validate",
     "prepublishOnly": "npm run validate"
   },

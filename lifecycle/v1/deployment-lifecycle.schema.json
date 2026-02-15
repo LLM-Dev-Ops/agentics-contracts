@@ -1,0 +1,255 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://agentics.org/schemas/lifecycle/v1/deployment-lifecycle.schema.json",
+  "title": "Deployment Lifecycle Spec",
+  "description": "Canonical lifecycle stages for deployment operations. Governs the progression from intent through rollout, verification, and post-deployment governance.",
+  "type": "object",
+  "properties": {
+    "deployment_id": {
+      "type": "string",
+      "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$",
+      "description": "Unique identifier for this deployment lifecycle instance"
+    },
+    "contract_version": {
+      "type": "string",
+      "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$",
+      "description": "Semantic version of the contract this lifecycle conforms to"
+    },
+    "current_stage": {
+      "$ref": "#/definitions/deployment_stage"
+    },
+    "stages": {
+      "type": "object",
+      "properties": {
+        "intent_received": {
+          "$ref": "#/definitions/stage_record",
+          "description": "Deployment intent has been received and validated"
+        },
+        "pre_checks_passed": {
+          "$ref": "#/definitions/stage_record",
+          "description": "Pre-deployment checks (health, capacity, policy) have passed"
+        },
+        "artifacts_resolved": {
+          "$ref": "#/definitions/stage_record",
+          "description": "All deployment artifacts (images, configs, secrets) are resolved"
+        },
+        "approval_granted": {
+          "$ref": "#/definitions/stage_record",
+          "description": "Required human or automated approvals have been obtained"
+        },
+        "rollout_started": {
+          "$ref": "#/definitions/stage_record",
+          "description": "The deployment rollout has begun"
+        },
+        "rollout_completed": {
+          "$ref": "#/definitions/stage_record",
+          "description": "The deployment rollout has finished across all targets"
+        },
+        "verification_passed": {
+          "$ref": "#/definitions/stage_record",
+          "description": "Post-deployment verification (smoke tests, health checks) passed"
+        },
+        "traffic_shifted": {
+          "$ref": "#/definitions/stage_record",
+          "description": "Traffic has been shifted to the new deployment"
+        },
+        "telemetry_recorded": {
+          "$ref": "#/definitions/stage_record",
+          "description": "Deployment telemetry and metrics have been persisted"
+        },
+        "governance_recorded": {
+          "$ref": "#/definitions/stage_record",
+          "description": "Governance and compliance records have been filed"
+        }
+      },
+      "required": ["intent_received"],
+      "additionalProperties": false
+    },
+    "rollback": {
+      "type": "object",
+      "properties": {
+        "triggered": {
+          "type": "boolean",
+          "default": false
+        },
+        "triggered_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "reason": {
+          "type": "string",
+          "maxLength": 2048
+        },
+        "rollback_to_version": {
+          "type": "string",
+          "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$"
+        }
+      },
+      "additionalProperties": false
+    },
+    "metadata": {
+      "$ref": "#/definitions/lifecycle_metadata"
+    }
+  },
+  "required": [
+    "deployment_id",
+    "contract_version",
+    "current_stage",
+    "stages"
+  ],
+  "additionalProperties": false,
+  "definitions": {
+    "deployment_stage": {
+      "type": "string",
+      "enum": [
+        "intent_received",
+        "pre_checks_passed",
+        "artifacts_resolved",
+        "approval_granted",
+        "rollout_started",
+        "rollout_completed",
+        "verification_passed",
+        "traffic_shifted",
+        "telemetry_recorded",
+        "governance_recorded"
+      ]
+    },
+    "stage_record": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": ["pending", "in_progress", "completed", "failed", "skipped"]
+        },
+        "entered_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "completed_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "initiated_by": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "error": {
+          "$ref": "#/definitions/stage_error"
+        },
+        "artifacts": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/stage_artifact"
+          }
+        }
+      },
+      "required": ["status"],
+      "additionalProperties": false
+    },
+    "stage_error": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "message": {
+          "type": "string",
+          "maxLength": 2048
+        },
+        "recoverable": {
+          "type": "boolean"
+        }
+      },
+      "required": ["code", "message"],
+      "additionalProperties": false
+    },
+    "stage_artifact": {
+      "type": "object",
+      "properties": {
+        "artifact_type": {
+          "type": "string",
+          "enum": [
+            "intent_manifest",
+            "pre_check_report",
+            "artifact_manifest",
+            "approval_record",
+            "rollout_plan",
+            "verification_report",
+            "traffic_config",
+            "telemetry_bundle",
+            "governance_report"
+          ]
+        },
+        "artifact_id": {
+          "type": "string",
+          "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+        },
+        "uri": {
+          "type": "string",
+          "format": "uri"
+        }
+      },
+      "required": ["artifact_type", "artifact_id"],
+      "additionalProperties": false
+    },
+    "lifecycle_metadata": {
+      "type": "object",
+      "properties": {
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "created_by": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "execution_id": {
+          "type": "string",
+          "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+        },
+        "environment": {
+          "type": "string",
+          "enum": ["development", "testing", "staging", "production", "sandbox"]
+        },
+        "target_services": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "service_name": {
+                "type": "string",
+                "minLength": 1
+              },
+              "layer": {
+                "type": "string",
+                "enum": ["foundational", "intelligence", "core", "integration_infra", "apex"]
+              },
+              "target_version": {
+                "type": "string",
+                "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$"
+              }
+            },
+            "required": ["service_name", "layer"],
+            "additionalProperties": false
+          }
+        },
+        "tags": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        }
+      },
+      "required": ["created_at", "created_by"],
+      "additionalProperties": false
+    }
+  }
+}

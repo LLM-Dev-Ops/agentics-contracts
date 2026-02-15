@@ -1,0 +1,229 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://agentics.org/schemas/lifecycle/v1/erp-lifecycle.schema.json",
+  "title": "ERP Lifecycle Spec",
+  "description": "Canonical lifecycle stages for ERP integration operations. Governs data synchronization, transformation, and reconciliation between the platform and external ERP systems.",
+  "type": "object",
+  "properties": {
+    "erp_lifecycle_id": {
+      "type": "string",
+      "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$",
+      "description": "Unique identifier for this ERP lifecycle instance"
+    },
+    "contract_version": {
+      "type": "string",
+      "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$"
+    },
+    "current_stage": {
+      "$ref": "#/definitions/erp_stage"
+    },
+    "stages": {
+      "type": "object",
+      "properties": {
+        "sync_requested": {
+          "$ref": "#/definitions/stage_record",
+          "description": "An ERP synchronization operation has been requested"
+        },
+        "connection_established": {
+          "$ref": "#/definitions/stage_record",
+          "description": "Connection to the external ERP system has been established"
+        },
+        "schema_validated": {
+          "$ref": "#/definitions/stage_record",
+          "description": "Source and target schemas have been validated for compatibility"
+        },
+        "data_extracted": {
+          "$ref": "#/definitions/stage_record",
+          "description": "Data has been extracted from the source system"
+        },
+        "data_transformed": {
+          "$ref": "#/definitions/stage_record",
+          "description": "Data has been transformed to match target schema"
+        },
+        "data_loaded": {
+          "$ref": "#/definitions/stage_record",
+          "description": "Transformed data has been loaded into the target system"
+        },
+        "reconciliation_completed": {
+          "$ref": "#/definitions/stage_record",
+          "description": "Source and target data have been reconciled for consistency"
+        },
+        "telemetry_recorded": {
+          "$ref": "#/definitions/stage_record",
+          "description": "Sync telemetry (row counts, latency, errors) has been persisted"
+        },
+        "governance_recorded": {
+          "$ref": "#/definitions/stage_record",
+          "description": "Data lineage and compliance records have been filed"
+        },
+        "sync_finalized": {
+          "$ref": "#/definitions/stage_record",
+          "description": "The sync operation has been finalized and connections released"
+        }
+      },
+      "required": ["sync_requested"],
+      "additionalProperties": false
+    },
+    "metadata": {
+      "$ref": "#/definitions/lifecycle_metadata"
+    }
+  },
+  "required": [
+    "erp_lifecycle_id",
+    "contract_version",
+    "current_stage",
+    "stages"
+  ],
+  "additionalProperties": false,
+  "definitions": {
+    "erp_stage": {
+      "type": "string",
+      "enum": [
+        "sync_requested",
+        "connection_established",
+        "schema_validated",
+        "data_extracted",
+        "data_transformed",
+        "data_loaded",
+        "reconciliation_completed",
+        "telemetry_recorded",
+        "governance_recorded",
+        "sync_finalized"
+      ]
+    },
+    "stage_record": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": ["pending", "in_progress", "completed", "failed", "skipped"]
+        },
+        "entered_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "completed_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "initiated_by": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "error": {
+          "$ref": "#/definitions/stage_error"
+        },
+        "artifacts": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/stage_artifact"
+          }
+        }
+      },
+      "required": ["status"],
+      "additionalProperties": false
+    },
+    "stage_error": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "message": {
+          "type": "string",
+          "maxLength": 2048
+        },
+        "recoverable": {
+          "type": "boolean"
+        }
+      },
+      "required": ["code", "message"],
+      "additionalProperties": false
+    },
+    "stage_artifact": {
+      "type": "object",
+      "properties": {
+        "artifact_type": {
+          "type": "string",
+          "enum": [
+            "connection_config",
+            "schema_mapping",
+            "extraction_manifest",
+            "transformation_log",
+            "load_receipt",
+            "reconciliation_report",
+            "telemetry_bundle",
+            "lineage_record",
+            "sync_summary"
+          ]
+        },
+        "artifact_id": {
+          "type": "string",
+          "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+        },
+        "uri": {
+          "type": "string",
+          "format": "uri"
+        }
+      },
+      "required": ["artifact_type", "artifact_id"],
+      "additionalProperties": false
+    },
+    "lifecycle_metadata": {
+      "type": "object",
+      "properties": {
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "created_by": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "erp_system": {
+          "type": "string",
+          "enum": [
+            "sap_s4hana",
+            "oracle_fusion",
+            "microsoft_dynamics_365",
+            "netsuite",
+            "workday",
+            "sage_intacct",
+            "custom"
+          ],
+          "description": "Target ERP system identifier"
+        },
+        "sync_direction": {
+          "type": "string",
+          "enum": ["inbound", "outbound", "bidirectional"],
+          "description": "Direction of data flow relative to the platform"
+        },
+        "record_count": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Total records processed in this sync"
+        },
+        "execution_id": {
+          "type": "string",
+          "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+        },
+        "tags": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        }
+      },
+      "required": ["created_at", "created_by", "erp_system", "sync_direction"],
+      "additionalProperties": false
+    }
+  }
+}

@@ -55,6 +55,15 @@ module.exports = {
       v1: {
         policy: path.join(__dirname, 'governance/v1/policy.schema.json')
       }
+    },
+    lifecycle: {
+      v1: {
+        simulationLifecycle: path.join(__dirname, 'lifecycle/v1/simulation-lifecycle.schema.json'),
+        deploymentLifecycle: path.join(__dirname, 'lifecycle/v1/deployment-lifecycle.schema.json'),
+        policyLifecycle: path.join(__dirname, 'lifecycle/v1/policy-lifecycle.schema.json'),
+        roiLifecycle: path.join(__dirname, 'lifecycle/v1/roi-lifecycle.schema.json'),
+        erpLifecycle: path.join(__dirname, 'lifecycle/v1/erp-lifecycle.schema.json')
+      }
     }
   },
 
