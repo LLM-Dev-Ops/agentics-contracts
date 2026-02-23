@@ -13,11 +13,13 @@
     "roi/",
     "governance/",
     "lifecycle/",
+    "dist/",
     "index.js",
     "index.d.ts"
   ],
   "exports": {
     ".": "./index.js",
+    "./pipeline": "./dist/pipeline/index.js",
     "./execution/v1/*": "./execution/v1/*.schema.json",
     "./simulation/v1/*": "./simulation/v1/*.schema.json",
     "./intent/v1/*": "./intent/v1/*.schema.json",
@@ -28,14 +30,16 @@
     "./lifecycle/v1/*": "./lifecycle/v1/*.schema.json"
   },
   "scripts": {
+    "build": "tsc",
     "validate": "ajv compile --validate-formats=false -s 'execution/**/*.schema.json' -s 'simulation/**/*.schema.json' -s 'intent/**/*.schema.json' -s 'exporters/**/*.schema.json' -s 'diligence/**/*.schema.json' -s 'roi/**/*.schema.json' -s 'governance/**/*.schema.json' -s 'lifecycle/**/*.schema.json'",
-    "test": "npm run validate",
-    "prepublishOnly": "npm run validate"
+    "test": "npm run validate && npm run build",
+    "prepublishOnly": "npm run validate && npm run build"
   },
   "keywords": [
     "agentics",
     "contracts",
     "json-schema",
+    "zod",
     "validation",
     "llm",
     "platform"
@@ -49,9 +53,13 @@
   "engines": {
     "node": ">=18.0.0"
   },
+  "dependencies": {
+    "zod": "^3.23.0"
+  },
   "devDependencies": {
     "ajv": "^8.12.0",
     "ajv-cli": "^5.0.0",
-    "ajv-formats": "^2.1.1"
+    "ajv-formats": "^2.1.1",
+    "typescript": "^5.4.0"
   }
 }
