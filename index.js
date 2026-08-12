@@ -135,3 +135,22 @@ module.exports = {
    */
   version: '1.1.2'
 };
+
+// Keep these explicit property assignments: Node's ESM-to-CommonJS bridge uses
+// static export detection, while the object above remains the canonical CJS API.
+// This lets ESM consumers import the same canonical schemas without a wrapper.
+module.exports.CONTRACTS_VERSION = module.exports.CONTRACTS_VERSION;
+module.exports.CANONICAL_SCHEMA_NAMES = module.exports.CANONICAL_SCHEMA_NAMES;
+module.exports.ExecutionIntentSchema = module.exports.ExecutionIntentSchema;
+module.exports.NodeType = module.exports.NodeType;
+module.exports.GraphNodeSchema = module.exports.GraphNodeSchema;
+module.exports.GraphEdgeSchema = module.exports.GraphEdgeSchema;
+module.exports.ExecutionGraphSchema = module.exports.ExecutionGraphSchema;
+module.exports.EvidenceEntrySchema = module.exports.EvidenceEntrySchema;
+module.exports.EvidenceSummarySchema = module.exports.EvidenceSummarySchema;
+module.exports.CostReferenceSchema = module.exports.CostReferenceSchema;
+module.exports.ResultStatus = module.exports.ResultStatus;
+module.exports.CoreExecutionResultSchema = module.exports.CoreExecutionResultSchema;
+module.exports.PolicyDecisionSchema = module.exports.PolicyDecisionSchema;
+module.exports.ExecutionContextSchema = module.exports.ExecutionContextSchema;
+module.exports.ResultPacketSchema = module.exports.ResultPacketSchema;
