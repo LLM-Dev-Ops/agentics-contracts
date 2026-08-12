@@ -8,11 +8,12 @@
 import type { z } from 'zod';
 export const CONTRACTS_VERSION: '1.1.2';
 export const CANONICAL_SCHEMA_NAMES: readonly string[];
-export const ExecutionIntentSchema: z.ZodTypeAny; export type ExecutionIntent = z.infer<typeof ExecutionIntentSchema>;
-export const NodeType: z.ZodTypeAny; export type NodeType = z.infer<typeof NodeType>;
-export const GraphNodeSchema: z.ZodTypeAny; export type GraphNode = z.infer<typeof GraphNodeSchema>;
-export const GraphEdgeSchema: z.ZodTypeAny; export type GraphEdge = z.infer<typeof GraphEdgeSchema>;
-export const ExecutionGraphSchema: z.ZodTypeAny; export type ExecutionGraph = z.infer<typeof ExecutionGraphSchema>;
+export interface ExecutionIntent { id:string;caller:string;action:string;target:string;parameters:Record<string,unknown>;metadata:Record<string,unknown>;is_meta_simulation:boolean }
+export const ExecutionIntentSchema: z.ZodType<ExecutionIntent>;
+export type NodeType = 'execution_root'|'core'|'repo'|'agent'; export const NodeType: z.ZodType<NodeType>;
+export interface GraphNode { id:string;type:NodeType;name:string;parent_id:string|null;children_ids:string[] } export const GraphNodeSchema:z.ZodType<GraphNode>;
+export interface GraphEdge { from:string;to:string } export const GraphEdgeSchema:z.ZodType<GraphEdge>;
+export interface ExecutionGraph { nodes:GraphNode[];edges:GraphEdge[];validated:boolean } export const ExecutionGraphSchema:z.ZodType<ExecutionGraph>;
 export const EvidenceEntrySchema: z.ZodTypeAny; export type EvidenceEntry = z.infer<typeof EvidenceEntrySchema>;
 export const EvidenceSummarySchema: z.ZodTypeAny; export type EvidenceSummary = z.infer<typeof EvidenceSummarySchema>;
 export const CostReferenceSchema: z.ZodTypeAny; export type CostReference = z.infer<typeof CostReferenceSchema>;
