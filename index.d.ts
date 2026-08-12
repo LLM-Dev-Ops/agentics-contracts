@@ -5,6 +5,23 @@
  * of the Agentics platform.
  */
 
+import type { z } from 'zod';
+export const CONTRACTS_VERSION: '1.1.1';
+export const CANONICAL_SCHEMA_NAMES: readonly string[];
+export const ExecutionIntentSchema: z.ZodTypeAny; export type ExecutionIntent = z.infer<typeof ExecutionIntentSchema>;
+export const NodeType: z.ZodTypeAny; export type NodeType = z.infer<typeof NodeType>;
+export const GraphNodeSchema: z.ZodTypeAny; export type GraphNode = z.infer<typeof GraphNodeSchema>;
+export const GraphEdgeSchema: z.ZodTypeAny; export type GraphEdge = z.infer<typeof GraphEdgeSchema>;
+export const ExecutionGraphSchema: z.ZodTypeAny; export type ExecutionGraph = z.infer<typeof ExecutionGraphSchema>;
+export const EvidenceEntrySchema: z.ZodTypeAny; export type EvidenceEntry = z.infer<typeof EvidenceEntrySchema>;
+export const EvidenceSummarySchema: z.ZodTypeAny; export type EvidenceSummary = z.infer<typeof EvidenceSummarySchema>;
+export const CostReferenceSchema: z.ZodTypeAny; export type CostReference = z.infer<typeof CostReferenceSchema>;
+export const ResultStatus: z.ZodTypeAny; export type ResultStatus = z.infer<typeof ResultStatus>;
+export const CoreExecutionResultSchema: z.ZodTypeAny; export type CoreExecutionResult = z.infer<typeof CoreExecutionResultSchema>;
+export const PolicyDecisionSchema: z.ZodTypeAny; export type PolicyDecision = z.infer<typeof PolicyDecisionSchema>;
+export const ExecutionContextSchema: z.ZodTypeAny; export type ExecutionContext = z.infer<typeof ExecutionContextSchema>;
+export const ResultPacketSchema: z.ZodTypeAny; export type ResultPacket = z.infer<typeof ResultPacketSchema>;
+
 declare module '@agentics/contracts' {
   /**
    * Schema version registry structure
