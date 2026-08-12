@@ -27,7 +27,7 @@ const ExecutionContextSchema = z.object({execution_id:z.string().min(1),parent_s
 const ResultPacketSchema = z.object({execution_id:z.string().min(1),repo_name:z.string().min(1),result:CoreExecutionResultSchema});
 
 module.exports = {
-  CONTRACTS_VERSION: '1.1.1',
+  CONTRACTS_VERSION: '1.1.2',
   CANONICAL_SCHEMA_NAMES: Object.freeze(['ExecutionIntent','ExecutionGraph','CoreExecutionResult','EvidenceSummary','PolicyDecision','CostReference','ExecutionContext','ResultPacket']),
   ExecutionIntentSchema,NodeType,GraphNodeSchema,GraphEdgeSchema,ExecutionGraphSchema,EvidenceEntrySchema,EvidenceSummarySchema,
   CostReferenceSchema,ResultStatus,CoreExecutionResultSchema,PolicyDecisionSchema,ExecutionContextSchema,ResultPacketSchema,
@@ -133,5 +133,5 @@ module.exports = {
    * Package version - follows semver.
    * Breaking changes require major version bump.
    */
-  version: '1.1.1'
+  version: '1.1.2'
 };

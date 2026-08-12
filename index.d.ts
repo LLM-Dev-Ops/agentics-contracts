@@ -6,7 +6,7 @@
  */
 
 import type { z } from 'zod';
-export const CONTRACTS_VERSION: '1.1.1';
+export const CONTRACTS_VERSION: '1.1.2';
 export const CANONICAL_SCHEMA_NAMES: readonly string[];
 export const ExecutionIntentSchema: z.ZodTypeAny; export type ExecutionIntent = z.infer<typeof ExecutionIntentSchema>;
 export const NodeType: z.ZodTypeAny; export type NodeType = z.infer<typeof NodeType>;
