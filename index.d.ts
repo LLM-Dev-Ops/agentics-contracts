@@ -54,6 +54,32 @@ export interface ResultIndexResponse { organization_id:string;replayed:boolean;e
 export const ResultIndexResponseSchema: z.ZodType<ResultIndexResponse>;
 export interface ResultIndexListResponse { organization_id:string;results:ResultIndexEntry[];next_after_id:string|null }
 export const ResultIndexListResponseSchema: z.ZodType<ResultIndexListResponse>;
+export interface ResultIndexScenario { scenario_id:string;total_runs:number;successful_runs:number;failed_runs:number;last_run_at:string|null;avg_duration_ms:number|null }
+export const ResultIndexScenarioSchema: z.ZodType<ResultIndexScenario>;
+export interface ResultIndexScenarioResponse { organization_id:string;scenario:ResultIndexScenario }
+export const ResultIndexScenarioResponseSchema: z.ZodType<ResultIndexScenarioResponse>;
+export type ResultIndexPeriodValue = '24h'|'7d'|'30d';
+export const ResultIndexPeriod: z.ZodType<ResultIndexPeriodValue>;
+export interface ResultIndexEnvironmentSummary { environment:string;period:{name:ResultIndexPeriodValue;since:string;until:string};total_runs:number;successful:number;failed:number;success_rate:number;avg_duration_ms:number|null;last_run_at:string|null }
+export const ResultIndexEnvironmentSummarySchema: z.ZodType<ResultIndexEnvironmentSummary>;
+export interface ResultIndexSummaryResponse { organization_id:string;summary:ResultIndexEnvironmentSummary }
+export const ResultIndexSummaryResponseSchema: z.ZodType<ResultIndexSummaryResponse>;
+export interface UsageLedgerEntryAppendRequest { idempotency_key:string;entry_type:'grant'|'debit';amount:string;correlation_id:string;user_id?:string;service?:string;run_id?:string;metadata?:Record<string,unknown> }
+export const UsageLedgerEntryAppendRequestSchema: z.ZodType<UsageLedgerEntryAppendRequest>;
+export interface UsageLedgerEntry { id:string;entry_type:'grant'|'debit'|'reservation_consume';amount:string;balance_after:string;correlation_id:string;user_id:string|null;service:string|null;run_id:string|null;metadata:Record<string,unknown>;created_at:string }
+export const UsageLedgerEntrySchema: z.ZodType<UsageLedgerEntry>;
+export interface UsageLedgerEntryResponse { organization_id:string;replayed:boolean;entry:UsageLedgerEntry }
+export const UsageLedgerEntryResponseSchema: z.ZodType<UsageLedgerEntryResponse>;
+export interface UsageLedgerBalanceResponse { organization_id:string;current_balance:string;reserved_amount:string;available_balance:string;as_of:string }
+export const UsageLedgerBalanceResponseSchema: z.ZodType<UsageLedgerBalanceResponse>;
+export interface UsageLedgerReservationCreateRequest { idempotency_key:string;amount:string;ttl_seconds:number;correlation_id:string;user_id?:string;service?:string;run_id?:string;metadata?:Record<string,unknown> }
+export const UsageLedgerReservationCreateRequestSchema: z.ZodType<UsageLedgerReservationCreateRequest>;
+export interface UsageLedgerReservationActionRequest { idempotency_key:string;correlation_id:string }
+export const UsageLedgerReservationActionRequestSchema: z.ZodType<UsageLedgerReservationActionRequest>;
+export interface UsageLedgerReservation { id:string;amount:string;status:'active'|'consumed'|'cancelled'|'expired';correlation_id:string;user_id:string|null;service:string|null;run_id:string|null;metadata:Record<string,unknown>;expires_at:string;created_at:string;updated_at:string }
+export const UsageLedgerReservationSchema: z.ZodType<UsageLedgerReservation>;
+export interface UsageLedgerReservationResponse { organization_id:string;replayed:boolean;reservation:UsageLedgerReservation }
+export const UsageLedgerReservationResponseSchema: z.ZodType<UsageLedgerReservationResponse>;
 
 declare module '@agentics/contracts' {
   /**
@@ -158,6 +184,14 @@ declare module '@agentics/contracts' {
       resultIndexStore: string;
       resultIndexResponse: string;
       resultIndexListResponse: string;
+      resultIndexScenarioResponse: string;
+      resultIndexSummaryResponse: string;
+      usageLedgerEntryAppend: string;
+      usageLedgerEntryResponse: string;
+      usageLedgerBalanceResponse: string;
+      usageLedgerReservationCreate: string;
+      usageLedgerReservationAction: string;
+      usageLedgerReservationResponse: string;
     };
   }
 

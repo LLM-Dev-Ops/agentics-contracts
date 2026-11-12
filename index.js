@@ -86,15 +86,61 @@ const ResultIndexStoreRequestSchema = z.object({idempotency_key:z.string().min(1
 const ResultIndexEntrySchema = z.object({id:z.string().regex(/^\d+$/),stored_at:z.string().datetime(),result:ResultIndexDocumentSchema});
 const ResultIndexResponseSchema = z.object({organization_id:z.string().min(1),replayed:z.boolean(),entry:ResultIndexEntrySchema});
 const ResultIndexListResponseSchema = z.object({organization_id:z.string().min(1),results:z.array(ResultIndexEntrySchema),next_after_id:z.string().regex(/^\d+$/).nullable()});
+const ResultIndexScenarioSchema = z.object({
+  scenario_id:z.string().min(1).max(255),total_runs:z.number().int().nonnegative(),successful_runs:z.number().int().nonnegative(),
+  failed_runs:z.number().int().nonnegative(),last_run_at:z.string().datetime().nullable(),avg_duration_ms:z.number().nonnegative().nullable()
+});
+const ResultIndexScenarioResponseSchema = z.object({organization_id:z.string().min(1),scenario:ResultIndexScenarioSchema});
+const ResultIndexPeriod = z.enum(['24h','7d','30d']);
+const ResultIndexEnvironmentSummarySchema = z.object({
+  environment:z.string().min(1).max(255),period:z.object({name:ResultIndexPeriod,since:z.string().datetime(),until:z.string().datetime()}),
+  total_runs:z.number().int().nonnegative(),successful:z.number().int().nonnegative(),failed:z.number().int().nonnegative(),
+  success_rate:z.number().min(0).max(1),avg_duration_ms:z.number().nonnegative().nullable(),last_run_at:z.string().datetime().nullable()
+});
+const ResultIndexSummaryResponseSchema = z.object({organization_id:z.string().min(1),summary:ResultIndexEnvironmentSummarySchema});
+const PositiveDecimalString = z.string().regex(/^[0-9]+(\.[0-9]{1,6})?$/).refine(value => Number(value) > 0, 'amount must be positive');
+const SignedDecimalString = z.string().regex(/^-?[0-9]+(\.[0-9]{1,6})?$/);
+const UsageLedgerEntryAppendRequestSchema = z.object({
+  idempotency_key:z.string().min(1).max(255),entry_type:z.enum(['grant','debit']),amount:PositiveDecimalString,
+  correlation_id:z.string().min(1).max(255),user_id:z.string().min(1).max(255).optional(),service:z.string().min(1).max(255).optional(),
+  run_id:z.string().min(1).max(255).optional(),metadata:z.record(z.string(),z.unknown()).optional()
+}).strict();
+const UsageLedgerEntrySchema = z.object({
+  id:z.string().regex(/^\d+$/),entry_type:z.enum(['grant','debit','reservation_consume']),amount:SignedDecimalString,
+  balance_after:SignedDecimalString,correlation_id:z.string().min(1),user_id:z.string().nullable(),service:z.string().nullable(),
+  run_id:z.string().nullable(),metadata:z.record(z.string(),z.unknown()),created_at:z.string().datetime()
+});
+const UsageLedgerEntryResponseSchema = z.object({organization_id:z.string().min(1),replayed:z.boolean(),entry:UsageLedgerEntrySchema});
+const UsageLedgerBalanceResponseSchema = z.object({
+  organization_id:z.string().min(1),current_balance:SignedDecimalString,reserved_amount:PositiveDecimalString.or(z.literal('0.000000')),
+  available_balance:SignedDecimalString,as_of:z.string().datetime()
+});
+const UsageLedgerReservationCreateRequestSchema = z.object({
+  idempotency_key:z.string().min(1).max(255),amount:PositiveDecimalString,ttl_seconds:z.number().int().min(1).max(86400),
+  correlation_id:z.string().min(1).max(255),user_id:z.string().min(1).max(255).optional(),service:z.string().min(1).max(255).optional(),
+  run_id:z.string().min(1).max(255).optional(),metadata:z.record(z.string(),z.unknown()).optional()
+}).strict();
+const UsageLedgerReservationActionRequestSchema = z.object({
+  idempotency_key:z.string().min(1).max(255),correlation_id:z.string().min(1).max(255)
+}).strict();
+const UsageLedgerReservationSchema = z.object({
+  id:z.string().uuid(),amount:PositiveDecimalString,status:z.enum(['active','consumed','cancelled','expired']),correlation_id:z.string().min(1),
+  user_id:z.string().nullable(),service:z.string().nullable(),run_id:z.string().nullable(),metadata:z.record(z.string(),z.unknown()),
+  expires_at:z.string().datetime(),created_at:z.string().datetime(),updated_at:z.string().datetime()
+});
+const UsageLedgerReservationResponseSchema = z.object({organization_id:z.string().min(1),replayed:z.boolean(),reservation:UsageLedgerReservationSchema});
 
 module.exports = {
   CONTRACTS_VERSION: '1.2.0',
-  CANONICAL_SCHEMA_NAMES: Object.freeze(['ExecutionIntent','ExecutionGraph','CoreExecutionResult','EvidenceSummary','PolicyDecision','CostReference','ExecutionContext','ResultPacket','DataPlanePrincipal','SimulationEventsAppendRequest','SimulationEventsResponse','ResultIndexStoreRequest','ResultIndexResponse','ResultIndexListResponse']),
+  CANONICAL_SCHEMA_NAMES: Object.freeze(['ExecutionIntent','ExecutionGraph','CoreExecutionResult','EvidenceSummary','PolicyDecision','CostReference','ExecutionContext','ResultPacket','DataPlanePrincipal','SimulationEventsAppendRequest','SimulationEventsResponse','ResultIndexStoreRequest','ResultIndexResponse','ResultIndexListResponse','ResultIndexScenarioResponse','ResultIndexSummaryResponse','UsageLedgerEntryAppendRequest','UsageLedgerEntryResponse','UsageLedgerBalanceResponse','UsageLedgerReservationCreateRequest','UsageLedgerReservationActionRequest','UsageLedgerReservationResponse']),
   ExecutionIntentSchema,NodeType,GraphNodeSchema,GraphEdgeSchema,ExecutionGraphSchema,EvidenceEntrySchema,EvidenceSummarySchema,
   CostReferenceSchema,ResultStatus,CoreExecutionResultSchema,PolicyDecisionSchema,ExecutionContextSchema,ResultPacketSchema,
   DataPlanePrincipalSchema,SimulationEventKind,SimulationEventAppendItemSchema,SimulationEventsAppendRequestSchema,SimulationEventSchema,SimulationEventsResponseSchema,
   ResultIndexLayerRecordSchema,ResultIndexExecutionProofSchema,ResultIndexExecutionMetadataSchema,ResultIndexExecutionContextSchema,ResultIndexSummarySchema,
   ResultIndexDocumentSchema,ResultIndexStoreRequestSchema,ResultIndexEntrySchema,ResultIndexResponseSchema,ResultIndexListResponseSchema,
+  ResultIndexScenarioSchema,ResultIndexScenarioResponseSchema,ResultIndexPeriod,ResultIndexEnvironmentSummarySchema,ResultIndexSummaryResponseSchema,
+  UsageLedgerEntryAppendRequestSchema,UsageLedgerEntrySchema,UsageLedgerEntryResponseSchema,UsageLedgerBalanceResponseSchema,
+  UsageLedgerReservationCreateRequestSchema,UsageLedgerReservationActionRequestSchema,UsageLedgerReservationSchema,UsageLedgerReservationResponseSchema,
   /**
    * Schema path registry organized by domain, version, and schema name.
    * Each path points to the authoritative JSON Schema file.
@@ -155,7 +201,15 @@ module.exports = {
         simulationEventsResponse: path.join(__dirname, 'data-plane/v1/simulation-events-response.schema.json'),
         resultIndexStore: path.join(__dirname, 'data-plane/v1/result-index-store.schema.json'),
         resultIndexResponse: path.join(__dirname, 'data-plane/v1/result-index-response.schema.json'),
-        resultIndexListResponse: path.join(__dirname, 'data-plane/v1/result-index-list-response.schema.json')
+        resultIndexListResponse: path.join(__dirname, 'data-plane/v1/result-index-list-response.schema.json'),
+        resultIndexScenarioResponse: path.join(__dirname, 'data-plane/v1/result-index-scenario-response.schema.json'),
+        resultIndexSummaryResponse: path.join(__dirname, 'data-plane/v1/result-index-summary-response.schema.json'),
+        usageLedgerEntryAppend: path.join(__dirname, 'data-plane/v1/usage-ledger-entry-append.schema.json'),
+        usageLedgerEntryResponse: path.join(__dirname, 'data-plane/v1/usage-ledger-entry-response.schema.json'),
+        usageLedgerBalanceResponse: path.join(__dirname, 'data-plane/v1/usage-ledger-balance-response.schema.json'),
+        usageLedgerReservationCreate: path.join(__dirname, 'data-plane/v1/usage-ledger-reservation-create.schema.json'),
+        usageLedgerReservationAction: path.join(__dirname, 'data-plane/v1/usage-ledger-reservation-action.schema.json'),
+        usageLedgerReservationResponse: path.join(__dirname, 'data-plane/v1/usage-ledger-reservation-response.schema.json')
       }
     }
   },
@@ -244,3 +298,16 @@ module.exports.ResultIndexStoreRequestSchema = module.exports.ResultIndexStoreRe
 module.exports.ResultIndexEntrySchema = module.exports.ResultIndexEntrySchema;
 module.exports.ResultIndexResponseSchema = module.exports.ResultIndexResponseSchema;
 module.exports.ResultIndexListResponseSchema = module.exports.ResultIndexListResponseSchema;
+module.exports.ResultIndexScenarioSchema = module.exports.ResultIndexScenarioSchema;
+module.exports.ResultIndexScenarioResponseSchema = module.exports.ResultIndexScenarioResponseSchema;
+module.exports.ResultIndexPeriod = module.exports.ResultIndexPeriod;
+module.exports.ResultIndexEnvironmentSummarySchema = module.exports.ResultIndexEnvironmentSummarySchema;
+module.exports.ResultIndexSummaryResponseSchema = module.exports.ResultIndexSummaryResponseSchema;
+module.exports.UsageLedgerEntryAppendRequestSchema = module.exports.UsageLedgerEntryAppendRequestSchema;
+module.exports.UsageLedgerEntrySchema = module.exports.UsageLedgerEntrySchema;
+module.exports.UsageLedgerEntryResponseSchema = module.exports.UsageLedgerEntryResponseSchema;
+module.exports.UsageLedgerBalanceResponseSchema = module.exports.UsageLedgerBalanceResponseSchema;
+module.exports.UsageLedgerReservationCreateRequestSchema = module.exports.UsageLedgerReservationCreateRequestSchema;
+module.exports.UsageLedgerReservationActionRequestSchema = module.exports.UsageLedgerReservationActionRequestSchema;
+module.exports.UsageLedgerReservationSchema = module.exports.UsageLedgerReservationSchema;
+module.exports.UsageLedgerReservationResponseSchema = module.exports.UsageLedgerReservationResponseSchema;

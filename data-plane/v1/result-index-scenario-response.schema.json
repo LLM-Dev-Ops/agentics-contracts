@@ -1,0 +1,24 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://agentics.org/contracts/data-plane/v1/result-index-scenario-response.schema.json",
+  "title": "Tenant-bound result index scenario response",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["organization_id", "scenario"],
+  "properties": {
+    "organization_id": { "type": "string", "minLength": 1 },
+    "scenario": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["scenario_id", "total_runs", "successful_runs", "failed_runs", "last_run_at", "avg_duration_ms"],
+      "properties": {
+        "scenario_id": { "type": "string", "minLength": 1, "maxLength": 255 },
+        "total_runs": { "type": "integer", "minimum": 0 },
+        "successful_runs": { "type": "integer", "minimum": 0 },
+        "failed_runs": { "type": "integer", "minimum": 0 },
+        "last_run_at": { "type": ["string", "null"], "format": "date-time" },
+        "avg_duration_ms": { "type": ["number", "null"], "minimum": 0 }
+      }
+    }
+  }
+}
