@@ -53,3 +53,18 @@ export {
   ExecutionFailureEventSchema,
   type ExecutionFailureEvent,
 } from "./events";
+
+export {
+  DataPlanePrincipalSchema,
+  type DataPlanePrincipal,
+  SimulationEventKind,
+  type SimulationEventKindValue,
+  SimulationEventAppendItemSchema,
+  type SimulationEventAppendItem,
+  SimulationEventsAppendRequestSchema,
+  type SimulationEventsAppendRequest,
+  SimulationEventSchema,
+  type SimulationEvent,
+  SimulationEventsResponseSchema,
+  type SimulationEventsResponse,
+} from "./data-plane";

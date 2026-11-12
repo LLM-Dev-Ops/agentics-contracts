@@ -6,7 +6,7 @@
  */
 
 import type { z } from 'zod';
-export const CONTRACTS_VERSION: '1.1.2';
+export const CONTRACTS_VERSION: '1.2.0';
 export const CANONICAL_SCHEMA_NAMES: readonly string[];
 export interface ExecutionIntent { id:string;caller:string;action:string;target:string;parameters:Record<string,unknown>;metadata:Record<string,unknown>;is_meta_simulation:boolean }
 export const ExecutionIntentSchema: z.ZodType<ExecutionIntent>;
@@ -22,6 +22,12 @@ export const CoreExecutionResultSchema: z.ZodTypeAny; export type CoreExecutionR
 export const PolicyDecisionSchema: z.ZodTypeAny; export type PolicyDecision = z.infer<typeof PolicyDecisionSchema>;
 export const ExecutionContextSchema: z.ZodTypeAny; export type ExecutionContext = z.infer<typeof ExecutionContextSchema>;
 export const ResultPacketSchema: z.ZodTypeAny; export type ResultPacket = z.infer<typeof ResultPacketSchema>;
+export const DataPlanePrincipalSchema: z.ZodTypeAny; export type DataPlanePrincipal = z.infer<typeof DataPlanePrincipalSchema>;
+export const SimulationEventKind: z.ZodTypeAny; export type SimulationEventKindValue = z.infer<typeof SimulationEventKind>;
+export const SimulationEventAppendItemSchema: z.ZodTypeAny; export type SimulationEventAppendItem = z.infer<typeof SimulationEventAppendItemSchema>;
+export const SimulationEventsAppendRequestSchema: z.ZodTypeAny; export type SimulationEventsAppendRequest = z.infer<typeof SimulationEventsAppendRequestSchema>;
+export const SimulationEventSchema: z.ZodTypeAny; export type SimulationEvent = z.infer<typeof SimulationEventSchema>;
+export const SimulationEventsResponseSchema: z.ZodTypeAny; export type SimulationEventsResponse = z.infer<typeof SimulationEventsResponseSchema>;
 
 declare module '@agentics/contracts' {
   /**

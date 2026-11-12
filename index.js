@@ -26,11 +26,46 @@ const PolicyDecisionSchema = z.object({decision:z.enum(['allow','deny']),rationa
 const ExecutionContextSchema = z.object({execution_id:z.string().min(1),parent_span_id:z.string().min(1),simulation_resolution:z.string().min(1),repo_name:z.string().min(1)});
 const ResultPacketSchema = z.object({execution_id:z.string().min(1),repo_name:z.string().min(1),result:CoreExecutionResultSchema});
 
+const DataPlanePrincipalSchema = z.object({
+  subject: z.string().min(1),
+  principal: z.string().email(),
+  organization_id: z.string().min(1),
+  audience: z.string().min(1),
+  mapping_source: z.literal('configured_principal_binding')
+});
+const SimulationEventKind = z.enum([
+  'created','started','step_started','step_completed','log','metric',
+  'artifact','validation','completed','failed','cancelled'
+]);
+const SimulationEventAppendItemSchema = z.object({
+  kind: SimulationEventKind,
+  payload: z.unknown()
+});
+const SimulationEventsAppendRequestSchema = z.object({
+  simulation_id: z.string().uuid(),
+  idempotency_key: z.string().min(1).max(255),
+  events: z.array(SimulationEventAppendItemSchema).min(1).max(100)
+}).strict();
+const SimulationEventSchema = z.object({
+  id: z.string().regex(/^\d+$/),
+  simulation_id: z.string().uuid(),
+  seq: z.number().int().positive(),
+  ts: z.string().datetime(),
+  kind: SimulationEventKind,
+  payload: z.unknown()
+});
+const SimulationEventsResponseSchema = z.object({
+  organization_id: z.string().min(1),
+  replayed: z.boolean(),
+  events: z.array(SimulationEventSchema)
+});
+
 module.exports = {
-  CONTRACTS_VERSION: '1.1.2',
-  CANONICAL_SCHEMA_NAMES: Object.freeze(['ExecutionIntent','ExecutionGraph','CoreExecutionResult','EvidenceSummary','PolicyDecision','CostReference','ExecutionContext','ResultPacket']),
+  CONTRACTS_VERSION: '1.2.0',
+  CANONICAL_SCHEMA_NAMES: Object.freeze(['ExecutionIntent','ExecutionGraph','CoreExecutionResult','EvidenceSummary','PolicyDecision','CostReference','ExecutionContext','ResultPacket','DataPlanePrincipal','SimulationEventsAppendRequest','SimulationEventsResponse']),
   ExecutionIntentSchema,NodeType,GraphNodeSchema,GraphEdgeSchema,ExecutionGraphSchema,EvidenceEntrySchema,EvidenceSummarySchema,
   CostReferenceSchema,ResultStatus,CoreExecutionResultSchema,PolicyDecisionSchema,ExecutionContextSchema,ResultPacketSchema,
+  DataPlanePrincipalSchema,SimulationEventKind,SimulationEventAppendItemSchema,SimulationEventsAppendRequestSchema,SimulationEventSchema,SimulationEventsResponseSchema,
   /**
    * Schema path registry organized by domain, version, and schema name.
    * Each path points to the authoritative JSON Schema file.
@@ -83,6 +118,13 @@ module.exports = {
         roiLifecycle: path.join(__dirname, 'lifecycle/v1/roi-lifecycle.schema.json'),
         erpLifecycle: path.join(__dirname, 'lifecycle/v1/erp-lifecycle.schema.json')
       }
+    },
+    dataPlane: {
+      v1: {
+        principal: path.join(__dirname, 'data-plane/v1/principal.schema.json'),
+        simulationEventsAppend: path.join(__dirname, 'data-plane/v1/simulation-events-append.schema.json'),
+        simulationEventsResponse: path.join(__dirname, 'data-plane/v1/simulation-events-response.schema.json')
+      }
     }
   },
 
@@ -133,7 +175,7 @@ module.exports = {
    * Package version - follows semver.
    * Breaking changes require major version bump.
    */
-  version: '1.1.2'
+  version: '1.2.0'
 };
 
 // Keep these explicit property assignments: Node's ESM-to-CommonJS bridge uses
@@ -154,3 +196,9 @@ module.exports.CoreExecutionResultSchema = module.exports.CoreExecutionResultSch
 module.exports.PolicyDecisionSchema = module.exports.PolicyDecisionSchema;
 module.exports.ExecutionContextSchema = module.exports.ExecutionContextSchema;
 module.exports.ResultPacketSchema = module.exports.ResultPacketSchema;
+module.exports.DataPlanePrincipalSchema = module.exports.DataPlanePrincipalSchema;
+module.exports.SimulationEventKind = module.exports.SimulationEventKind;
+module.exports.SimulationEventAppendItemSchema = module.exports.SimulationEventAppendItemSchema;
+module.exports.SimulationEventsAppendRequestSchema = module.exports.SimulationEventsAppendRequestSchema;
+module.exports.SimulationEventSchema = module.exports.SimulationEventSchema;
+module.exports.SimulationEventsResponseSchema = module.exports.SimulationEventsResponseSchema;
