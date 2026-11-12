@@ -34,6 +34,26 @@ export interface SimulationEvent { id:string;simulation_id:string;seq:number;ts:
 export const SimulationEventSchema: z.ZodType<SimulationEvent>;
 export interface SimulationEventsResponse { organization_id:string;replayed:boolean;events:SimulationEvent[] }
 export const SimulationEventsResponseSchema: z.ZodType<SimulationEventsResponse>;
+export interface ResultIndexLayerRecord { layer_name:string;status:'passed'|'failed'|'skipped';duration_ms:number;assertions_passed:number;assertions_failed:number;error?:string }
+export const ResultIndexLayerRecordSchema: z.ZodType<ResultIndexLayerRecord>;
+export interface ResultIndexExecutionProof { proof_hash:string;layerRecords:ResultIndexLayerRecord[];generated_at:string }
+export const ResultIndexExecutionProofSchema: z.ZodType<ResultIndexExecutionProof>;
+export interface ResultIndexExecutionMetadata { execution_id:string;proof_hash:string;layers_executed:string[];schema_version:string;environment:string;started_at:string;completed_at:string;duration_ms:number }
+export const ResultIndexExecutionMetadataSchema: z.ZodType<ResultIndexExecutionMetadata>;
+export interface ResultIndexExecutionContext { repo_name:string;environment:string;triggered_by?:string;branch?:string;commit_sha?:string }
+export const ResultIndexExecutionContextSchema: z.ZodType<ResultIndexExecutionContext>;
+export interface ResultIndexSummary { assertions_passed:number;assertions_failed:number;total_layers:number;mandatory_layers_complete:boolean;[key:string]:unknown }
+export const ResultIndexSummarySchema: z.ZodType<ResultIndexSummary>;
+export interface ResultIndexDocument { run_id:string;scenario_id:string;execution_id:string;simulation_id:string;parent_span_id:string;simulation_resolution:string;repo_name:string;environment:string;status:string;execution_metadata:ResultIndexExecutionMetadata;executionProof:ResultIndexExecutionProof;execution_context?:ResultIndexExecutionContext;result_summary:ResultIndexSummary;correlation_id:string|null;timestamps?:{started_at:string;completed_at:string;duration_ms:number} }
+export const ResultIndexDocumentSchema: z.ZodType<ResultIndexDocument>;
+export interface ResultIndexStoreRequest { idempotency_key:string;result:ResultIndexDocument }
+export const ResultIndexStoreRequestSchema: z.ZodType<ResultIndexStoreRequest>;
+export interface ResultIndexEntry { id:string;stored_at:string;result:ResultIndexDocument }
+export const ResultIndexEntrySchema: z.ZodType<ResultIndexEntry>;
+export interface ResultIndexResponse { organization_id:string;replayed:boolean;entry:ResultIndexEntry }
+export const ResultIndexResponseSchema: z.ZodType<ResultIndexResponse>;
+export interface ResultIndexListResponse { organization_id:string;results:ResultIndexEntry[];next_after_id:string|null }
+export const ResultIndexListResponseSchema: z.ZodType<ResultIndexListResponse>;
 
 declare module '@agentics/contracts' {
   /**
@@ -130,6 +150,17 @@ declare module '@agentics/contracts' {
     };
   }
 
+  interface DataPlaneSchemas {
+    v1: {
+      principal: string;
+      simulationEventsAppend: string;
+      simulationEventsResponse: string;
+      resultIndexStore: string;
+      resultIndexResponse: string;
+      resultIndexListResponse: string;
+    };
+  }
+
   /**
    * Complete schema registry type
    */
@@ -142,6 +173,7 @@ declare module '@agentics/contracts' {
     roi: RoiSchemas;
     governance: GovernanceSchemas;
     lifecycle: LifecycleSchemas;
+    dataPlane: DataPlaneSchemas;
   }
 
   /**

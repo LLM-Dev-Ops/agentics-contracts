@@ -59,13 +59,42 @@ const SimulationEventsResponseSchema = z.object({
   replayed: z.boolean(),
   events: z.array(SimulationEventSchema)
 });
+const ResultIndexLayerRecordSchema = z.object({
+  layer_name:z.string().min(1),status:z.enum(['passed','failed','skipped']),duration_ms:z.number().nonnegative(),
+  assertions_passed:z.number().int().nonnegative(),assertions_failed:z.number().int().nonnegative(),error:z.string().optional()
+});
+const ResultIndexExecutionProofSchema = z.object({proof_hash:z.string().min(1),layerRecords:z.array(ResultIndexLayerRecordSchema),generated_at:z.string().min(1)});
+const ResultIndexExecutionMetadataSchema = z.object({
+  execution_id:z.string().min(1),proof_hash:z.string().min(1),layers_executed:z.array(z.string()),schema_version:z.string().min(1),
+  environment:z.string().min(1),started_at:z.string().min(1),completed_at:z.string().min(1),duration_ms:z.number().nonnegative()
+});
+const ResultIndexExecutionContextSchema = z.object({
+  repo_name:z.string().min(1),environment:z.string().min(1),triggered_by:z.string().optional(),branch:z.string().optional(),commit_sha:z.string().optional()
+});
+const ResultIndexSummarySchema = z.object({
+  assertions_passed:z.number().int().nonnegative(),assertions_failed:z.number().int().nonnegative(),
+  total_layers:z.number().int().nonnegative(),mandatory_layers_complete:z.boolean()
+}).passthrough();
+const ResultIndexDocumentSchema = z.object({
+  run_id:z.string().min(1),scenario_id:z.string().min(1),execution_id:z.string().min(1),simulation_id:z.string().min(1),
+  parent_span_id:z.string().min(1),simulation_resolution:z.string().min(1),repo_name:z.string().min(1),environment:z.string().min(1),status:z.string().min(1),
+  execution_metadata:ResultIndexExecutionMetadataSchema,executionProof:ResultIndexExecutionProofSchema,
+  execution_context:ResultIndexExecutionContextSchema.optional(),result_summary:ResultIndexSummarySchema,
+  correlation_id:z.string().nullable(),timestamps:z.object({started_at:z.string().min(1),completed_at:z.string().min(1),duration_ms:z.number().nonnegative()}).optional()
+}).strict();
+const ResultIndexStoreRequestSchema = z.object({idempotency_key:z.string().min(1).max(255),result:ResultIndexDocumentSchema}).strict();
+const ResultIndexEntrySchema = z.object({id:z.string().regex(/^\d+$/),stored_at:z.string().datetime(),result:ResultIndexDocumentSchema});
+const ResultIndexResponseSchema = z.object({organization_id:z.string().min(1),replayed:z.boolean(),entry:ResultIndexEntrySchema});
+const ResultIndexListResponseSchema = z.object({organization_id:z.string().min(1),results:z.array(ResultIndexEntrySchema),next_after_id:z.string().regex(/^\d+$/).nullable()});
 
 module.exports = {
   CONTRACTS_VERSION: '1.2.0',
-  CANONICAL_SCHEMA_NAMES: Object.freeze(['ExecutionIntent','ExecutionGraph','CoreExecutionResult','EvidenceSummary','PolicyDecision','CostReference','ExecutionContext','ResultPacket','DataPlanePrincipal','SimulationEventsAppendRequest','SimulationEventsResponse']),
+  CANONICAL_SCHEMA_NAMES: Object.freeze(['ExecutionIntent','ExecutionGraph','CoreExecutionResult','EvidenceSummary','PolicyDecision','CostReference','ExecutionContext','ResultPacket','DataPlanePrincipal','SimulationEventsAppendRequest','SimulationEventsResponse','ResultIndexStoreRequest','ResultIndexResponse','ResultIndexListResponse']),
   ExecutionIntentSchema,NodeType,GraphNodeSchema,GraphEdgeSchema,ExecutionGraphSchema,EvidenceEntrySchema,EvidenceSummarySchema,
   CostReferenceSchema,ResultStatus,CoreExecutionResultSchema,PolicyDecisionSchema,ExecutionContextSchema,ResultPacketSchema,
   DataPlanePrincipalSchema,SimulationEventKind,SimulationEventAppendItemSchema,SimulationEventsAppendRequestSchema,SimulationEventSchema,SimulationEventsResponseSchema,
+  ResultIndexLayerRecordSchema,ResultIndexExecutionProofSchema,ResultIndexExecutionMetadataSchema,ResultIndexExecutionContextSchema,ResultIndexSummarySchema,
+  ResultIndexDocumentSchema,ResultIndexStoreRequestSchema,ResultIndexEntrySchema,ResultIndexResponseSchema,ResultIndexListResponseSchema,
   /**
    * Schema path registry organized by domain, version, and schema name.
    * Each path points to the authoritative JSON Schema file.
@@ -123,7 +152,10 @@ module.exports = {
       v1: {
         principal: path.join(__dirname, 'data-plane/v1/principal.schema.json'),
         simulationEventsAppend: path.join(__dirname, 'data-plane/v1/simulation-events-append.schema.json'),
-        simulationEventsResponse: path.join(__dirname, 'data-plane/v1/simulation-events-response.schema.json')
+        simulationEventsResponse: path.join(__dirname, 'data-plane/v1/simulation-events-response.schema.json'),
+        resultIndexStore: path.join(__dirname, 'data-plane/v1/result-index-store.schema.json'),
+        resultIndexResponse: path.join(__dirname, 'data-plane/v1/result-index-response.schema.json'),
+        resultIndexListResponse: path.join(__dirname, 'data-plane/v1/result-index-list-response.schema.json')
       }
     }
   },
@@ -202,3 +234,13 @@ module.exports.SimulationEventAppendItemSchema = module.exports.SimulationEventA
 module.exports.SimulationEventsAppendRequestSchema = module.exports.SimulationEventsAppendRequestSchema;
 module.exports.SimulationEventSchema = module.exports.SimulationEventSchema;
 module.exports.SimulationEventsResponseSchema = module.exports.SimulationEventsResponseSchema;
+module.exports.ResultIndexLayerRecordSchema = module.exports.ResultIndexLayerRecordSchema;
+module.exports.ResultIndexExecutionProofSchema = module.exports.ResultIndexExecutionProofSchema;
+module.exports.ResultIndexExecutionMetadataSchema = module.exports.ResultIndexExecutionMetadataSchema;
+module.exports.ResultIndexExecutionContextSchema = module.exports.ResultIndexExecutionContextSchema;
+module.exports.ResultIndexSummarySchema = module.exports.ResultIndexSummarySchema;
+module.exports.ResultIndexDocumentSchema = module.exports.ResultIndexDocumentSchema;
+module.exports.ResultIndexStoreRequestSchema = module.exports.ResultIndexStoreRequestSchema;
+module.exports.ResultIndexEntrySchema = module.exports.ResultIndexEntrySchema;
+module.exports.ResultIndexResponseSchema = module.exports.ResultIndexResponseSchema;
+module.exports.ResultIndexListResponseSchema = module.exports.ResultIndexListResponseSchema;

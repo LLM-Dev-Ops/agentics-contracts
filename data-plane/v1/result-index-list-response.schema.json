@@ -1,0 +1,25 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://agentics.org/contracts/data-plane/v1/result-index-list-response.schema.json",
+  "title": "Tenant-bound ordered result index list response",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["organization_id", "results", "next_after_id"],
+  "properties": {
+    "organization_id": { "type": "string", "minLength": 1 },
+    "results": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "stored_at", "result"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^[0-9]+$" },
+          "stored_at": { "type": "string", "format": "date-time" },
+          "result": { "$ref": "https://agentics.org/contracts/data-plane/v1/result-index-store.schema.json#/$defs/result" }
+        }
+      }
+    },
+    "next_after_id": { "type": ["string", "null"], "pattern": "^[0-9]+$" }
+  }
+}

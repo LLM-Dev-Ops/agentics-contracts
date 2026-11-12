@@ -29,10 +29,18 @@ async function schemasUnder(directory) {
 const ajv = new Ajv({ allErrors: true, strict: false });
 addFormats(ajv);
 const files = (await Promise.all(roots.map(schemasUnder))).flat().sort();
+const schemas = await Promise.all(files.map(async (file) => ({
+  file,
+  schema: JSON.parse(await readFile(file, 'utf8')),
+})));
 
-for (const file of files) {
-  const schema = JSON.parse(await readFile(file, 'utf8'));
-  ajv.compile(schema);
+// Register every authority contract before compilation so versioned schemas can
+// reuse definitions by absolute $id without weakening validation or duplicating
+// the canonical result packet shape.
+for (const { schema } of schemas) ajv.addSchema(schema);
+
+for (const { file, schema } of schemas) {
+  if (!ajv.getSchema(schema.$id)) throw new Error(`schema ${file} did not register`);
   console.log(`schema ${file} is valid`);
 }
 
