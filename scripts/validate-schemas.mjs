@@ -44,4 +44,41 @@ for (const { file, schema } of schemas) {
   console.log(`schema ${file} is valid`);
 }
 
+function requireValid(schemaName, value) {
+  const validate = ajv.getSchema(`https://agentics.org/contracts/data-plane/v1/${schemaName}.schema.json`);
+  if (!validate?.(value)) throw new Error(`${schemaName} rejected authority fixture: ${ajv.errorsText(validate?.errors)}`);
+}
+
+function requireInvalid(schemaName, value) {
+  const validate = ajv.getSchema(`https://agentics.org/contracts/data-plane/v1/${schemaName}.schema.json`);
+  if (validate?.(value)) throw new Error(`${schemaName} accepted forbidden authority fixture`);
+}
+
+const organizationId = 'tenant-a';
+requireValid('identity-api-key-lookup', { key_hash: 'a'.repeat(64) });
+requireInvalid('identity-api-key-lookup', { api_key: 'ag_live_secret' });
+requireInvalid('identity-api-key-lookup', { key_hash: 'a'.repeat(64), organization_id: organizationId });
+requireValid('identity-api-key-response', {
+  key_id: 'c433a3fa-1d07-4e56-bf30-b9019c7f1415', organization_id: organizationId,
+  name: 'cli', scopes: ['simulation:run'], created_at: '2026-11-12T00:00:00.000Z',
+  expires_at: null, last_used_at: null,
+});
+requireInvalid('identity-api-key-response', {
+  key_id: 'c433a3fa-1d07-4e56-bf30-b9019c7f1415', organization_id: organizationId,
+  name: 'cli', scopes: [], created_at: '2026-11-12T00:00:00.000Z', expires_at: null,
+  last_used_at: null, key_hash: 'a'.repeat(64),
+});
+requireValid('identity-entitlement-response', {
+  organization_id: organizationId, plan: 'developer', max_requests: 10000,
+  max_tokens: 1000000, max_api_keys: 10,
+});
+requireInvalid('identity-cli-session-authorize', {
+  session_code: 'ABCD1234', organization_id: organizationId,
+});
+requireValid('identity-cli-session-poll', { status: 'pending' });
+requireValid('identity-cli-session-poll', {
+  status: 'completed', email: 'owner@example.com', payment_status: 'paid',
+  organization_id: organizationId, role: 'owner', api_key: 'ag_live_one_time',
+});
+
 console.log(`validated ${files.length} authoritative schemas`);

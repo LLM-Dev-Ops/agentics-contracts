@@ -1,0 +1,13 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://agentics.org/contracts/data-plane/v1/identity-cli-session-create.schema.json",
+  "title": "CLI device authorization session create request",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "cli_name": { "type": "string", "minLength": 1, "maxLength": 255 },
+    "cli_version": { "type": "string", "minLength": 1, "maxLength": 255 },
+    "hostname": { "type": "string", "minLength": 1, "maxLength": 255 },
+    "scopes": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true }
+  }
+}

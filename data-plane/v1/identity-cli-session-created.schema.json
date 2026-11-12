@@ -1,0 +1,16 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://agentics.org/contracts/data-plane/v1/identity-cli-session-created.schema.json",
+  "title": "CLI device authorization session create response",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["session_code", "device_code", "verification_url", "expires_at", "expires_in_seconds", "poll_interval_seconds"],
+  "properties": {
+    "session_code": { "type": "string", "pattern": "^[A-Z0-9]{8}$" },
+    "device_code": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "verification_url": { "type": "string", "format": "uri" },
+    "expires_at": { "type": "string", "format": "date-time" },
+    "expires_in_seconds": { "const": 600 },
+    "poll_interval_seconds": { "const": 5 }
+  }
+}

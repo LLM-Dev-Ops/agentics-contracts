@@ -33,6 +33,60 @@ const DataPlanePrincipalSchema = z.object({
   audience: z.string().min(1),
   mapping_source: z.literal('configured_principal_binding')
 });
+const IdentityApiKeyLookupSchema = z.object({
+  key_hash: z.string().regex(/^[a-f0-9]{64}$/)
+}).strict();
+const IdentityApiKeyResponseSchema = z.object({
+  key_id: z.string().uuid(),
+  organization_id: z.string().min(1),
+  name: z.string().min(1),
+  scopes: z.array(z.string().min(1)),
+  created_at: z.string().datetime(),
+  expires_at: z.string().datetime().nullable(),
+  last_used_at: z.string().datetime().nullable()
+}).strict();
+const IdentityEntitlementResponseSchema = z.object({
+  organization_id: z.string().min(1),
+  plan: z.enum(['free','developer','team','enterprise']),
+  max_requests: z.number().int().nonnegative(),
+  max_tokens: z.number().int().nonnegative(),
+  max_api_keys: z.number().int().nonnegative()
+}).strict();
+const IdentityCliSessionCreateSchema = z.object({
+  cli_name: z.string().min(1).max(255).optional(),
+  cli_version: z.string().min(1).max(255).optional(),
+  hostname: z.string().min(1).max(255).optional(),
+  scopes: z.array(z.string().min(1)).optional()
+}).strict();
+const IdentityCliSessionCreatedSchema = z.object({
+  session_code: z.string().regex(/^[A-Z0-9]{8}$/),
+  device_code: z.string().regex(/^[a-f0-9]{64}$/),
+  verification_url: z.string().url(),
+  expires_at: z.string().datetime(),
+  expires_in_seconds: z.literal(600),
+  poll_interval_seconds: z.literal(5)
+}).strict();
+const IdentityCliSessionAuthorizeSchema = z.object({
+  session_code: z.string().regex(/^[A-Z0-9]{8}$/),
+  key_name: z.string().min(1).max(255).optional(),
+  scopes: z.array(z.string().min(1)).optional()
+}).strict();
+const IdentityCliSessionAuthorizedSchema = z.object({
+  success: z.literal(true),
+  organization_id: z.string().min(1),
+  key_id: z.string().uuid()
+}).strict();
+const IdentityCliSessionPollSchema = z.union([
+  z.object({ status: z.enum(['pending','authorized']) }).strict(),
+  z.object({
+    status: z.literal('completed'),
+    api_key: z.string().min(1).optional(),
+    email: z.string().email(),
+    payment_status: z.enum(['paid','unpaid','trial','internal']),
+    organization_id: z.string().min(1),
+    role: z.literal('owner')
+  }).strict()
+]);
 const SimulationEventKind = z.enum([
   'created','started','step_started','step_completed','log','metric',
   'artifact','validation','completed','failed','cancelled'
@@ -132,10 +186,12 @@ const UsageLedgerReservationResponseSchema = z.object({organization_id:z.string(
 
 module.exports = {
   CONTRACTS_VERSION: '1.2.0',
-  CANONICAL_SCHEMA_NAMES: Object.freeze(['ExecutionIntent','ExecutionGraph','CoreExecutionResult','EvidenceSummary','PolicyDecision','CostReference','ExecutionContext','ResultPacket','DataPlanePrincipal','SimulationEventsAppendRequest','SimulationEventsResponse','ResultIndexStoreRequest','ResultIndexResponse','ResultIndexListResponse','ResultIndexScenarioResponse','ResultIndexSummaryResponse','UsageLedgerEntryAppendRequest','UsageLedgerEntryResponse','UsageLedgerBalanceResponse','UsageLedgerReservationCreateRequest','UsageLedgerReservationActionRequest','UsageLedgerReservationResponse']),
+  CANONICAL_SCHEMA_NAMES: Object.freeze(['ExecutionIntent','ExecutionGraph','CoreExecutionResult','EvidenceSummary','PolicyDecision','CostReference','ExecutionContext','ResultPacket','DataPlanePrincipal','IdentityApiKeyLookup','IdentityApiKeyResponse','IdentityEntitlementResponse','IdentityCliSessionCreate','IdentityCliSessionCreated','IdentityCliSessionAuthorize','IdentityCliSessionAuthorized','IdentityCliSessionPoll','SimulationEventsAppendRequest','SimulationEventsResponse','ResultIndexStoreRequest','ResultIndexResponse','ResultIndexListResponse','ResultIndexScenarioResponse','ResultIndexSummaryResponse','UsageLedgerEntryAppendRequest','UsageLedgerEntryResponse','UsageLedgerBalanceResponse','UsageLedgerReservationCreateRequest','UsageLedgerReservationActionRequest','UsageLedgerReservationResponse']),
   ExecutionIntentSchema,NodeType,GraphNodeSchema,GraphEdgeSchema,ExecutionGraphSchema,EvidenceEntrySchema,EvidenceSummarySchema,
   CostReferenceSchema,ResultStatus,CoreExecutionResultSchema,PolicyDecisionSchema,ExecutionContextSchema,ResultPacketSchema,
-  DataPlanePrincipalSchema,SimulationEventKind,SimulationEventAppendItemSchema,SimulationEventsAppendRequestSchema,SimulationEventSchema,SimulationEventsResponseSchema,
+  DataPlanePrincipalSchema,IdentityApiKeyLookupSchema,IdentityApiKeyResponseSchema,IdentityEntitlementResponseSchema,
+  IdentityCliSessionCreateSchema,IdentityCliSessionCreatedSchema,IdentityCliSessionAuthorizeSchema,IdentityCliSessionAuthorizedSchema,IdentityCliSessionPollSchema,
+  SimulationEventKind,SimulationEventAppendItemSchema,SimulationEventsAppendRequestSchema,SimulationEventSchema,SimulationEventsResponseSchema,
   ResultIndexLayerRecordSchema,ResultIndexExecutionProofSchema,ResultIndexExecutionMetadataSchema,ResultIndexExecutionContextSchema,ResultIndexSummarySchema,
   ResultIndexDocumentSchema,ResultIndexStoreRequestSchema,ResultIndexEntrySchema,ResultIndexResponseSchema,ResultIndexListResponseSchema,
   ResultIndexScenarioSchema,ResultIndexScenarioResponseSchema,ResultIndexPeriod,ResultIndexEnvironmentSummarySchema,ResultIndexSummaryResponseSchema,
@@ -197,6 +253,14 @@ module.exports = {
     dataPlane: {
       v1: {
         principal: path.join(__dirname, 'data-plane/v1/principal.schema.json'),
+        identityApiKeyLookup: path.join(__dirname, 'data-plane/v1/identity-api-key-lookup.schema.json'),
+        identityApiKeyResponse: path.join(__dirname, 'data-plane/v1/identity-api-key-response.schema.json'),
+        identityEntitlementResponse: path.join(__dirname, 'data-plane/v1/identity-entitlement-response.schema.json'),
+        identityCliSessionCreate: path.join(__dirname, 'data-plane/v1/identity-cli-session-create.schema.json'),
+        identityCliSessionCreated: path.join(__dirname, 'data-plane/v1/identity-cli-session-created.schema.json'),
+        identityCliSessionAuthorize: path.join(__dirname, 'data-plane/v1/identity-cli-session-authorize.schema.json'),
+        identityCliSessionAuthorized: path.join(__dirname, 'data-plane/v1/identity-cli-session-authorized.schema.json'),
+        identityCliSessionPoll: path.join(__dirname, 'data-plane/v1/identity-cli-session-poll.schema.json'),
         simulationEventsAppend: path.join(__dirname, 'data-plane/v1/simulation-events-append.schema.json'),
         simulationEventsResponse: path.join(__dirname, 'data-plane/v1/simulation-events-response.schema.json'),
         resultIndexStore: path.join(__dirname, 'data-plane/v1/result-index-store.schema.json'),
@@ -283,6 +347,14 @@ module.exports.PolicyDecisionSchema = module.exports.PolicyDecisionSchema;
 module.exports.ExecutionContextSchema = module.exports.ExecutionContextSchema;
 module.exports.ResultPacketSchema = module.exports.ResultPacketSchema;
 module.exports.DataPlanePrincipalSchema = module.exports.DataPlanePrincipalSchema;
+module.exports.IdentityApiKeyLookupSchema = module.exports.IdentityApiKeyLookupSchema;
+module.exports.IdentityApiKeyResponseSchema = module.exports.IdentityApiKeyResponseSchema;
+module.exports.IdentityEntitlementResponseSchema = module.exports.IdentityEntitlementResponseSchema;
+module.exports.IdentityCliSessionCreateSchema = module.exports.IdentityCliSessionCreateSchema;
+module.exports.IdentityCliSessionCreatedSchema = module.exports.IdentityCliSessionCreatedSchema;
+module.exports.IdentityCliSessionAuthorizeSchema = module.exports.IdentityCliSessionAuthorizeSchema;
+module.exports.IdentityCliSessionAuthorizedSchema = module.exports.IdentityCliSessionAuthorizedSchema;
+module.exports.IdentityCliSessionPollSchema = module.exports.IdentityCliSessionPollSchema;
 module.exports.SimulationEventKind = module.exports.SimulationEventKind;
 module.exports.SimulationEventAppendItemSchema = module.exports.SimulationEventAppendItemSchema;
 module.exports.SimulationEventsAppendRequestSchema = module.exports.SimulationEventsAppendRequestSchema;

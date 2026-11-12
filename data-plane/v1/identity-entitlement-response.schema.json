@@ -1,0 +1,15 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://agentics.org/contracts/data-plane/v1/identity-entitlement-response.schema.json",
+  "title": "Resolved tenant entitlement response",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["organization_id", "plan", "max_requests", "max_tokens", "max_api_keys"],
+  "properties": {
+    "organization_id": { "type": "string", "minLength": 1 },
+    "plan": { "enum": ["free", "developer", "team", "enterprise"] },
+    "max_requests": { "type": "integer", "minimum": 0 },
+    "max_tokens": { "type": "integer", "minimum": 0 },
+    "max_api_keys": { "type": "integer", "minimum": 0 }
+  }
+}

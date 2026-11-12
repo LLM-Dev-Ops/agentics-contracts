@@ -24,6 +24,22 @@ export const ExecutionContextSchema: z.ZodTypeAny; export type ExecutionContext 
 export const ResultPacketSchema: z.ZodTypeAny; export type ResultPacket = z.infer<typeof ResultPacketSchema>;
 export interface DataPlanePrincipal { subject:string;principal:string;organization_id:string;audience:string;mapping_source:'configured_principal_binding' }
 export const DataPlanePrincipalSchema: z.ZodType<DataPlanePrincipal>;
+export interface IdentityApiKeyLookup { key_hash:string }
+export const IdentityApiKeyLookupSchema: z.ZodType<IdentityApiKeyLookup>;
+export interface IdentityApiKeyResponse { key_id:string;organization_id:string;name:string;scopes:string[];created_at:string;expires_at:string|null;last_used_at:string|null }
+export const IdentityApiKeyResponseSchema: z.ZodType<IdentityApiKeyResponse>;
+export interface IdentityEntitlementResponse { organization_id:string;plan:'free'|'developer'|'team'|'enterprise';max_requests:number;max_tokens:number;max_api_keys:number }
+export const IdentityEntitlementResponseSchema: z.ZodType<IdentityEntitlementResponse>;
+export interface IdentityCliSessionCreate { cli_name?:string;cli_version?:string;hostname?:string;scopes?:string[] }
+export const IdentityCliSessionCreateSchema: z.ZodType<IdentityCliSessionCreate>;
+export interface IdentityCliSessionCreated { session_code:string;device_code:string;verification_url:string;expires_at:string;expires_in_seconds:600;poll_interval_seconds:5 }
+export const IdentityCliSessionCreatedSchema: z.ZodType<IdentityCliSessionCreated>;
+export interface IdentityCliSessionAuthorize { session_code:string;key_name?:string;scopes?:string[] }
+export const IdentityCliSessionAuthorizeSchema: z.ZodType<IdentityCliSessionAuthorize>;
+export interface IdentityCliSessionAuthorized { success:true;organization_id:string;key_id:string }
+export const IdentityCliSessionAuthorizedSchema: z.ZodType<IdentityCliSessionAuthorized>;
+export type IdentityCliSessionPoll = {status:'pending'|'authorized'}|{status:'completed';api_key?:string;email:string;payment_status:'paid'|'unpaid'|'trial'|'internal';organization_id:string;role:'owner'};
+export const IdentityCliSessionPollSchema: z.ZodType<IdentityCliSessionPoll>;
 export type SimulationEventKindValue = 'created'|'started'|'step_started'|'step_completed'|'log'|'metric'|'artifact'|'validation'|'completed'|'failed'|'cancelled';
 export const SimulationEventKind: z.ZodType<SimulationEventKindValue>;
 export interface SimulationEventAppendItem { kind:SimulationEventKindValue;payload:unknown }
@@ -179,6 +195,14 @@ declare module '@agentics/contracts' {
   interface DataPlaneSchemas {
     v1: {
       principal: string;
+      identityApiKeyLookup: string;
+      identityApiKeyResponse: string;
+      identityEntitlementResponse: string;
+      identityCliSessionCreate: string;
+      identityCliSessionCreated: string;
+      identityCliSessionAuthorize: string;
+      identityCliSessionAuthorized: string;
+      identityCliSessionPoll: string;
       simulationEventsAppend: string;
       simulationEventsResponse: string;
       resultIndexStore: string;

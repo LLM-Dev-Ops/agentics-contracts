@@ -1,0 +1,17 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://agentics.org/contracts/data-plane/v1/identity-api-key-response.schema.json",
+  "title": "Tenant-bound API key lookup response",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["key_id", "organization_id", "name", "scopes", "created_at", "expires_at", "last_used_at"],
+  "properties": {
+    "key_id": { "type": "string", "format": "uuid" },
+    "organization_id": { "type": "string", "minLength": 1 },
+    "name": { "type": "string", "minLength": 1 },
+    "scopes": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true },
+    "created_at": { "type": "string", "format": "date-time" },
+    "expires_at": { "type": ["string", "null"], "format": "date-time" },
+    "last_used_at": { "type": ["string", "null"], "format": "date-time" }
+  }
+}

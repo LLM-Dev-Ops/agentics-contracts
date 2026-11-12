@@ -1,0 +1,26 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://agentics.org/contracts/data-plane/v1/identity-cli-session-poll.schema.json",
+  "title": "CLI device authorization poll response",
+  "oneOf": [
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status"],
+      "properties": { "status": { "enum": ["pending", "authorized"] } }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "email", "payment_status", "organization_id", "role"],
+      "properties": {
+        "status": { "const": "completed" },
+        "api_key": { "type": "string", "minLength": 1 },
+        "email": { "type": "string", "format": "email" },
+        "payment_status": { "enum": ["paid", "unpaid", "trial", "internal"] },
+        "organization_id": { "type": "string", "minLength": 1 },
+        "role": { "const": "owner" }
+      }
+    }
+  ]
+}
