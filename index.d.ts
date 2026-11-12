@@ -22,12 +22,18 @@ export const CoreExecutionResultSchema: z.ZodTypeAny; export type CoreExecutionR
 export const PolicyDecisionSchema: z.ZodTypeAny; export type PolicyDecision = z.infer<typeof PolicyDecisionSchema>;
 export const ExecutionContextSchema: z.ZodTypeAny; export type ExecutionContext = z.infer<typeof ExecutionContextSchema>;
 export const ResultPacketSchema: z.ZodTypeAny; export type ResultPacket = z.infer<typeof ResultPacketSchema>;
-export const DataPlanePrincipalSchema: z.ZodTypeAny; export type DataPlanePrincipal = z.infer<typeof DataPlanePrincipalSchema>;
-export const SimulationEventKind: z.ZodTypeAny; export type SimulationEventKindValue = z.infer<typeof SimulationEventKind>;
-export const SimulationEventAppendItemSchema: z.ZodTypeAny; export type SimulationEventAppendItem = z.infer<typeof SimulationEventAppendItemSchema>;
-export const SimulationEventsAppendRequestSchema: z.ZodTypeAny; export type SimulationEventsAppendRequest = z.infer<typeof SimulationEventsAppendRequestSchema>;
-export const SimulationEventSchema: z.ZodTypeAny; export type SimulationEvent = z.infer<typeof SimulationEventSchema>;
-export const SimulationEventsResponseSchema: z.ZodTypeAny; export type SimulationEventsResponse = z.infer<typeof SimulationEventsResponseSchema>;
+export interface DataPlanePrincipal { subject:string;principal:string;organization_id:string;audience:string;mapping_source:'configured_principal_binding' }
+export const DataPlanePrincipalSchema: z.ZodType<DataPlanePrincipal>;
+export type SimulationEventKindValue = 'created'|'started'|'step_started'|'step_completed'|'log'|'metric'|'artifact'|'validation'|'completed'|'failed'|'cancelled';
+export const SimulationEventKind: z.ZodType<SimulationEventKindValue>;
+export interface SimulationEventAppendItem { kind:SimulationEventKindValue;payload:unknown }
+export const SimulationEventAppendItemSchema: z.ZodType<SimulationEventAppendItem>;
+export interface SimulationEventsAppendRequest { simulation_id:string;idempotency_key:string;events:SimulationEventAppendItem[] }
+export const SimulationEventsAppendRequestSchema: z.ZodType<SimulationEventsAppendRequest>;
+export interface SimulationEvent { id:string;simulation_id:string;seq:number;ts:string;kind:SimulationEventKindValue;payload:unknown }
+export const SimulationEventSchema: z.ZodType<SimulationEvent>;
+export interface SimulationEventsResponse { organization_id:string;replayed:boolean;events:SimulationEvent[] }
+export const SimulationEventsResponseSchema: z.ZodType<SimulationEventsResponse>;
 
 declare module '@agentics/contracts' {
   /**
