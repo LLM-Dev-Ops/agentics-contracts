@@ -73,12 +73,13 @@ const IdentityCliSessionCreatedSchema = z.object({
   expires_in_seconds: z.literal(600),
   poll_interval_seconds: z.literal(5)
 }).strict();
+const sessionExpirySemantics = 'Session expiry MUST be evaluated using the persistence clock in the same row-locked transaction for authorization and polling; service-process clock comparisons are forbidden.';
 const IdentityCliSessionAuthorizeSchema = z.object({
   session_code: z.string().regex(/^[A-Z0-9]{8}$/),
   key_name: z.string().min(1).max(255).optional(),
   scopes: IdentityScopeListSchema.optional()
 }).strict().describe(
-  "CLI session authorization MUST be performed by an active tenant membership with role owner, resolved from the verified issuer and subject; caller-supplied tenant ownership is forbidden. The provider MUST revalidate the row-locked session's persisted requested scopes as a non-empty unique subset of the current allowlist before API-key creation; malformed, duplicate, empty, unsupported, or retired persisted scopes MUST fail closed."
+  "CLI session authorization MUST be performed by an active tenant membership with role owner, resolved from the verified issuer and subject; caller-supplied tenant ownership is forbidden. The provider MUST revalidate the row-locked session's persisted requested scopes as a non-empty unique subset of the current allowlist before API-key creation; malformed, duplicate, empty, unsupported, or retired persisted scopes MUST fail closed. " + sessionExpirySemantics
 );
 const IdentityCliSessionAuthorizedSchema = z.object({
   success: z.literal(true),
@@ -97,7 +98,7 @@ const IdentityCliSessionPollSchema = z.union([
     organization_id: z.string().min(1),
     role: z.literal('owner')
   }).strict().describe(
-    'A completed CLI session MUST deliver api_key only while the original authorizing membership remains active and bound to the same organization and the issued key remains active, unrevoked, and unexpired. Membership and key state MUST be row-locked in the same serializable delivery transaction. The decrypted api_key MUST hash to the referenced active key_id before delivery or erasure. API-key delivery is one-time.'
+    'A completed CLI session MUST deliver api_key only while the original authorizing membership remains active and bound to the same organization and the issued key remains active, unrevoked, and unexpired. Membership and key state MUST be row-locked in the same serializable delivery transaction. The decrypted api_key MUST hash to the referenced active key_id before delivery or erasure. API-key delivery is one-time. ' + sessionExpirySemantics
   )
 ]);
 const SimulationEventKind = z.enum([
