@@ -149,6 +149,7 @@ if (contracts.DataPlanePrincipalSchema.description !== principalBindingSemantics
   throw new Error('principal runtime validator drifted from principal-to-tenant binding semantics');
 }
 const sessionExpirySemantics = 'Session expiry MUST be evaluated after the session row lock is acquired, using a non-transaction-start persistence wall clock in the same transaction for authorization and polling; transaction-start timestamps and service-process clock comparisons are forbidden.';
+const apiKeyExpirySemantics = 'API-key expiry MUST be evaluated after the referenced key row lock is acquired, using a non-transaction-start persistence wall clock in the same serializable transaction; transaction-start timestamps and service-process clock comparisons are forbidden.';
 const ownerAuthorizationSemantics = "CLI session authorization MUST be performed by an active tenant membership with role owner, resolved from the verified issuer and subject; caller-supplied tenant ownership is forbidden. The provider MUST revalidate the row-locked session's persisted requested scopes as a non-empty unique subset of the current allowlist before API-key creation; malformed, duplicate, empty, unsupported, or retired persisted scopes MUST fail closed. " + sessionExpirySemantics;
 const authorizeAuthority = schemas.find(({ schema }) =>
   schema.$id === 'https://agentics.org/contracts/data-plane/v1/identity-cli-session-authorize.schema.json'
@@ -159,7 +160,7 @@ if (authorizeAuthority?.description !== ownerAuthorizationSemantics) {
 if (contracts.IdentityCliSessionAuthorizeSchema.description !== ownerAuthorizationSemantics) {
   throw new Error('identity-cli-session-authorize runtime validator drifted from owner-role semantics');
 }
-const authorizationReplaySemantics = 'When replaying a completed CLI session, the provider MUST return key_id only after row-locking an active, unrevoked, unexpired API key owned by the same authenticated organization; missing, cross-tenant, revoked, or expired key references MUST fail closed.';
+const authorizationReplaySemantics = 'When replaying a completed CLI session, the provider MUST return key_id only after row-locking an active, unrevoked, unexpired API key owned by the same authenticated organization; missing, cross-tenant, revoked, or expired key references MUST fail closed. ' + apiKeyExpirySemantics;
 const authorizedAuthority = schemas.find(({ schema }) =>
   schema.$id === 'https://agentics.org/contracts/data-plane/v1/identity-cli-session-authorized.schema.json'
 )?.schema;
@@ -231,7 +232,7 @@ requireValid('identity-cli-session-poll', {
   status: 'completed', email: 'owner@example.com', payment_status: 'paid',
   organization_id: organizationId, role: 'owner', api_key: 'ag_live_one_time',
 });
-const deliveryBindingSemantics = 'A completed CLI session MUST deliver api_key only while the original authorizing membership remains active and bound to the same organization and the issued key remains active, unrevoked, and unexpired. Membership and key state MUST be row-locked in the same serializable delivery transaction. The decrypted api_key MUST hash to the referenced active key_id before delivery or erasure. API-key delivery is one-time. ' + sessionExpirySemantics;
+const deliveryBindingSemantics = 'A completed CLI session MUST deliver api_key only while the original authorizing membership remains active and bound to the same organization and the issued key remains active, unrevoked, and unexpired. Membership and key state MUST be row-locked in the same serializable delivery transaction. ' + apiKeyExpirySemantics + ' The decrypted api_key MUST hash to the referenced active key_id before delivery or erasure. API-key delivery is one-time. ' + sessionExpirySemantics;
 const pollAuthority = schemas.find(({ schema }) =>
   schema.$id === 'https://agentics.org/contracts/data-plane/v1/identity-cli-session-poll.schema.json'
 )?.schema;
