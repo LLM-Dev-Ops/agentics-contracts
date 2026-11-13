@@ -99,6 +99,16 @@ if (contracts.IdentityEntitlementResponseSchema.shape.max_api_keys.description !
 requireInvalid('identity-cli-session-authorize', {
   session_code: 'ABCD1234', organization_id: organizationId,
 });
+const ownerAuthorizationSemantics = 'CLI session authorization MUST be performed by an active tenant membership with role owner, resolved from the verified issuer and subject; caller-supplied tenant ownership is forbidden.';
+const authorizeAuthority = schemas.find(({ schema }) =>
+  schema.$id === 'https://agentics.org/contracts/data-plane/v1/identity-cli-session-authorize.schema.json'
+)?.schema;
+if (authorizeAuthority?.description !== ownerAuthorizationSemantics) {
+  throw new Error('identity-cli-session-authorize lacks authoritative owner-role semantics');
+}
+if (contracts.IdentityCliSessionAuthorizeSchema.description !== ownerAuthorizationSemantics) {
+  throw new Error('identity-cli-session-authorize runtime validator drifted from owner-role semantics');
+}
 const duplicateScopeCreate = {
   scopes: ['simulation:run', 'simulation:run'],
 };
