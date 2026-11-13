@@ -84,7 +84,9 @@ const IdentityCliSessionAuthorizedSchema = z.object({
   success: z.literal(true),
   organization_id: z.string().min(1),
   key_id: z.string().uuid()
-}).strict();
+}).strict().describe(
+  'When replaying a completed CLI session, the provider MUST return key_id only after row-locking an active, unrevoked, unexpired API key owned by the same authenticated organization; missing, cross-tenant, revoked, or expired key references MUST fail closed.'
+);
 const IdentityCliSessionPollSchema = z.union([
   z.object({ status: z.enum(['pending','authorized']) }).strict(),
   z.object({
