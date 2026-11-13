@@ -23,7 +23,8 @@
     "max_api_keys": {
       "type": "integer",
       "minimum": 0,
-      "description": "Maximum concurrently active, unrevoked, unexpired API keys permitted for the organization. Key creation MUST be denied when the current count is greater than or equal to this limit."
+      "maximum": 9007199254740991,
+      "description": "Maximum concurrently active, unrevoked, unexpired API keys permitted for the organization. Key creation MUST be denied when the current count is greater than or equal to this limit. This value MUST be a non-negative safe JSON integer no greater than 9007199254740991; providers MUST fail closed instead of rounding a larger persisted BIGINT value."
     }
   }
 }
