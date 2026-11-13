@@ -9,7 +9,12 @@
     "key_id": { "type": "string", "format": "uuid" },
     "organization_id": { "type": "string", "minLength": 1 },
     "name": { "type": "string", "minLength": 1 },
-    "scopes": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true },
+    "scopes": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 },
+      "uniqueItems": true,
+      "description": "An active API key response MUST contain a unique scope list that remains a subset of the provider's current allowlist; malformed, duplicate, or retired scopes MUST fail closed and MUST NOT resolve as an active key."
+    },
     "created_at": { "type": "string", "format": "date-time" },
     "expires_at": { "type": ["string", "null"], "format": "date-time" },
     "last_used_at": { "type": ["string", "null"], "format": "date-time" }
