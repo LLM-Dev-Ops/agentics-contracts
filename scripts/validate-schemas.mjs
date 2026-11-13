@@ -160,7 +160,7 @@ if (authorizeAuthority?.description !== ownerAuthorizationSemantics) {
 if (contracts.IdentityCliSessionAuthorizeSchema.description !== ownerAuthorizationSemantics) {
   throw new Error('identity-cli-session-authorize runtime validator drifted from owner-role semantics');
 }
-const authorizationReplaySemantics = 'When replaying a completed CLI session, the provider MUST return key_id only after row-locking an active, unrevoked, unexpired API key owned by the same authenticated organization; missing, cross-tenant, revoked, or expired key references MUST fail closed. ' + apiKeyExpirySemantics;
+const authorizationReplaySemantics = 'When replaying a completed CLI session, the provider MUST require the same verified issuer and subject that originally authorized the session, then return key_id only after row-locking an active, unrevoked, unexpired API key owned by the same authenticated organization; missing or mismatched authorizing identity, cross-tenant, revoked, or expired key references MUST fail closed. ' + apiKeyExpirySemantics;
 const authorizedAuthority = schemas.find(({ schema }) =>
   schema.$id === 'https://agentics.org/contracts/data-plane/v1/identity-cli-session-authorized.schema.json'
 )?.schema;
