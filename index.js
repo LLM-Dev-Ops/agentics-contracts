@@ -54,7 +54,9 @@ const IdentityEntitlementResponseSchema = z.object({
   plan: z.enum(['free','developer','team','enterprise']),
   max_requests: z.number().int().nonnegative(),
   max_tokens: z.number().int().nonnegative(),
-  max_api_keys: z.number().int().nonnegative()
+  max_api_keys: z.number().int().nonnegative().describe(
+    'Maximum concurrently active, unrevoked, unexpired API keys permitted for the organization. Key creation MUST be denied when the current count is greater than or equal to this limit.'
+  )
 }).strict();
 const IdentityCliSessionCreateSchema = z.object({
   cli_name: z.string().min(1).max(255).optional(),

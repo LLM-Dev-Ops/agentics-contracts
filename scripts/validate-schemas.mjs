@@ -86,6 +86,16 @@ requireValid('identity-entitlement-response', {
   organization_id: organizationId, plan: 'developer', max_requests: 10000,
   max_tokens: 1000000, max_api_keys: 10,
 });
+const apiKeyLimitSemantics = 'Maximum concurrently active, unrevoked, unexpired API keys permitted for the organization. Key creation MUST be denied when the current count is greater than or equal to this limit.';
+const entitlementAuthority = schemas.find(({ schema }) =>
+  schema.$id === 'https://agentics.org/contracts/data-plane/v1/identity-entitlement-response.schema.json'
+)?.schema;
+if (entitlementAuthority?.properties?.max_api_keys?.description !== apiKeyLimitSemantics) {
+  throw new Error('identity-entitlement-response lacks authoritative max_api_keys enforcement semantics');
+}
+if (contracts.IdentityEntitlementResponseSchema.shape.max_api_keys.description !== apiKeyLimitSemantics) {
+  throw new Error('identity-entitlement-response runtime validator drifted from max_api_keys semantics');
+}
 requireInvalid('identity-cli-session-authorize', {
   session_code: 'ABCD1234', organization_id: organizationId,
 });
