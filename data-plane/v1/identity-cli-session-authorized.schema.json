@@ -2,6 +2,7 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "https://agentics.org/contracts/data-plane/v1/identity-cli-session-authorized.schema.json",
   "title": "CLI session authorization response",
+  "description": "When replaying a completed CLI session, the provider MUST return key_id only after row-locking an active, unrevoked, unexpired API key owned by the same authenticated organization; missing, cross-tenant, revoked, or expired key references MUST fail closed.",
   "type": "object",
   "additionalProperties": false,
   "required": ["success", "organization_id", "key_id"],
