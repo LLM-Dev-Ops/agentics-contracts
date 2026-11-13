@@ -82,7 +82,7 @@ const duplicateScopeResponse = {
 };
 requireInvalid('identity-api-key-response', duplicateScopeResponse);
 requireRuntimeInvalid(contracts.IdentityApiKeyResponseSchema, duplicateScopeResponse, 'identity-api-key-response');
-const activeApiKeyScopeSemantics = "An active API key response MUST contain a unique scope list that remains a subset of the provider's current allowlist; malformed, duplicate, or retired scopes MUST fail closed and MUST NOT resolve as an active key.";
+const activeApiKeyScopeSemantics = "An active API key response MUST contain a non-empty unique scope list that remains a subset of the provider's current allowlist; empty, malformed, duplicate, or retired scopes MUST fail closed and MUST NOT resolve as an active key.";
 const apiKeyResponseSchema = schemas.find(({ file }) => file.endsWith('identity-api-key-response.schema.json'))?.schema;
 if (apiKeyResponseSchema?.properties?.scopes?.description !== activeApiKeyScopeSemantics) {
   throw new Error('identity-api-key-response lacks active allowlist scope semantics');
@@ -157,6 +157,13 @@ requireRuntimeInvalid(
   duplicateScopeCreate,
   'identity-cli-session-create',
 );
+const emptyScopeCreate = { scopes: [] };
+requireInvalid('identity-cli-session-create', emptyScopeCreate);
+requireRuntimeInvalid(
+  contracts.IdentityCliSessionCreateSchema,
+  emptyScopeCreate,
+  'identity-cli-session-create empty scopes',
+);
 const duplicateScopeAuthorization = {
   session_code: 'ABCD1234', scopes: ['simulation:run', 'simulation:run'],
 };
@@ -165,6 +172,28 @@ requireRuntimeInvalid(
   contracts.IdentityCliSessionAuthorizeSchema,
   duplicateScopeAuthorization,
   'identity-cli-session-authorize',
+);
+const emptyScopeAuthorization = { session_code: 'ABCD1234', scopes: [] };
+requireInvalid('identity-cli-session-authorize', emptyScopeAuthorization);
+requireRuntimeInvalid(
+  contracts.IdentityCliSessionAuthorizeSchema,
+  emptyScopeAuthorization,
+  'identity-cli-session-authorize empty scopes',
+);
+const emptyScopeResponse = {
+  key_id: '11111111-1111-4111-8111-111111111111',
+  organization_id: organizationId,
+  name: 'empty-scope-key',
+  scopes: [],
+  created_at: '2026-11-13T00:00:00.000Z',
+  expires_at: null,
+  last_used_at: null,
+};
+requireInvalid('identity-api-key-response', emptyScopeResponse);
+requireRuntimeInvalid(
+  contracts.IdentityApiKeyResponseSchema,
+  emptyScopeResponse,
+  'identity-api-key-response empty scopes',
 );
 requireValid('identity-cli-session-poll', { status: 'pending' });
 requireValid('identity-cli-session-poll', {
