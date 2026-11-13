@@ -73,7 +73,7 @@ const IdentityCliSessionCreatedSchema = z.object({
   expires_in_seconds: z.literal(600),
   poll_interval_seconds: z.literal(5)
 }).strict();
-const sessionExpirySemantics = 'Session expiry MUST be evaluated using the persistence clock in the same row-locked transaction for authorization and polling; service-process clock comparisons are forbidden.';
+const sessionExpirySemantics = 'Session expiry MUST be evaluated after the session row lock is acquired, using a non-transaction-start persistence wall clock in the same transaction for authorization and polling; transaction-start timestamps and service-process clock comparisons are forbidden.';
 const IdentityCliSessionAuthorizeSchema = z.object({
   session_code: z.string().regex(/^[A-Z0-9]{8}$/),
   key_name: z.string().min(1).max(255).optional(),
