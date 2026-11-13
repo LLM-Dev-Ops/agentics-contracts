@@ -2,6 +2,7 @@ import { readdir, readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import Ajv from 'ajv';
 import addFormats from 'ajv-formats';
+import contracts from '../index.js';
 
 const roots = [
   'execution',
@@ -54,6 +55,12 @@ function requireInvalid(schemaName, value) {
   if (validate?.(value)) throw new Error(`${schemaName} accepted forbidden authority fixture`);
 }
 
+function requireRuntimeInvalid(schema, value, name) {
+  if (schema.safeParse(value).success) {
+    throw new Error(`${name} runtime validator accepted forbidden authority fixture`);
+  }
+}
+
 const organizationId = 'tenant-a';
 requireValid('identity-api-key-lookup', { key_hash: 'a'.repeat(64) });
 requireInvalid('identity-api-key-lookup', { api_key: 'ag_live_secret' });
@@ -68,6 +75,13 @@ requireInvalid('identity-api-key-response', {
   name: 'cli', scopes: [], created_at: '2026-11-12T00:00:00.000Z', expires_at: null,
   last_used_at: null, key_hash: 'a'.repeat(64),
 });
+const duplicateScopeResponse = {
+  key_id: 'c433a3fa-1d07-4e56-bf30-b9019c7f1415', organization_id: organizationId,
+  name: 'cli', scopes: ['simulation:run', 'simulation:run'],
+  created_at: '2026-11-12T00:00:00.000Z', expires_at: null, last_used_at: null,
+};
+requireInvalid('identity-api-key-response', duplicateScopeResponse);
+requireRuntimeInvalid(contracts.IdentityApiKeyResponseSchema, duplicateScopeResponse, 'identity-api-key-response');
 requireValid('identity-entitlement-response', {
   organization_id: organizationId, plan: 'developer', max_requests: 10000,
   max_tokens: 1000000, max_api_keys: 10,
@@ -75,6 +89,24 @@ requireValid('identity-entitlement-response', {
 requireInvalid('identity-cli-session-authorize', {
   session_code: 'ABCD1234', organization_id: organizationId,
 });
+const duplicateScopeCreate = {
+  scopes: ['simulation:run', 'simulation:run'],
+};
+requireInvalid('identity-cli-session-create', duplicateScopeCreate);
+requireRuntimeInvalid(
+  contracts.IdentityCliSessionCreateSchema,
+  duplicateScopeCreate,
+  'identity-cli-session-create',
+);
+const duplicateScopeAuthorization = {
+  session_code: 'ABCD1234', scopes: ['simulation:run', 'simulation:run'],
+};
+requireInvalid('identity-cli-session-authorize', duplicateScopeAuthorization);
+requireRuntimeInvalid(
+  contracts.IdentityCliSessionAuthorizeSchema,
+  duplicateScopeAuthorization,
+  'identity-cli-session-authorize',
+);
 requireValid('identity-cli-session-poll', { status: 'pending' });
 requireValid('identity-cli-session-poll', {
   status: 'completed', email: 'owner@example.com', payment_status: 'paid',

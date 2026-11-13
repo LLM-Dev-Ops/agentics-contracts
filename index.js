@@ -36,11 +36,15 @@ const DataPlanePrincipalSchema = z.object({
 const IdentityApiKeyLookupSchema = z.object({
   key_hash: z.string().regex(/^[a-f0-9]{64}$/)
 }).strict();
+const IdentityScopeListSchema = z.array(z.string().min(1)).refine(
+  (scopes) => new Set(scopes).size === scopes.length,
+  { message: 'Scopes must be unique' }
+);
 const IdentityApiKeyResponseSchema = z.object({
   key_id: z.string().uuid(),
   organization_id: z.string().min(1),
   name: z.string().min(1),
-  scopes: z.array(z.string().min(1)),
+  scopes: IdentityScopeListSchema,
   created_at: z.string().datetime(),
   expires_at: z.string().datetime().nullable(),
   last_used_at: z.string().datetime().nullable()
@@ -56,7 +60,7 @@ const IdentityCliSessionCreateSchema = z.object({
   cli_name: z.string().min(1).max(255).optional(),
   cli_version: z.string().min(1).max(255).optional(),
   hostname: z.string().min(1).max(255).optional(),
-  scopes: z.array(z.string().min(1)).optional()
+  scopes: IdentityScopeListSchema.optional()
 }).strict();
 const IdentityCliSessionCreatedSchema = z.object({
   session_code: z.string().regex(/^[A-Z0-9]{8}$/),
@@ -69,7 +73,7 @@ const IdentityCliSessionCreatedSchema = z.object({
 const IdentityCliSessionAuthorizeSchema = z.object({
   session_code: z.string().regex(/^[A-Z0-9]{8}$/),
   key_name: z.string().min(1).max(255).optional(),
-  scopes: z.array(z.string().min(1)).optional()
+  scopes: IdentityScopeListSchema.optional()
 }).strict();
 const IdentityCliSessionAuthorizedSchema = z.object({
   success: z.literal(true),
