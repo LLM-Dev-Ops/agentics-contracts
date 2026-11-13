@@ -2,6 +2,7 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "https://agentics.org/contracts/data-plane/v1/principal.schema.json",
   "title": "Data Plane Principal",
+  "description": "Configured IAM principal bindings MUST map each case-insensitively unique principal email to exactly one non-empty string organization_id. Duplicate canonical principals, malformed principal keys, and non-string or empty organization identifiers MUST fail closed at startup and request time instead of being overwritten or coerced.",
   "type": "object",
   "additionalProperties": false,
   "required": ["subject", "principal", "organization_id", "audience", "mapping_source"],

@@ -1,12 +1,13 @@
 import { z } from "zod";
 
+const principalBindingSemantics = "Configured IAM principal bindings MUST map each case-insensitively unique principal email to exactly one non-empty string organization_id. Duplicate canonical principals, malformed principal keys, and non-string or empty organization identifiers MUST fail closed at startup and request time instead of being overwritten or coerced.";
 export const DataPlanePrincipalSchema = z.object({
   subject: z.string().min(1),
   principal: z.string().email(),
   organization_id: z.string().min(1),
   audience: z.string().min(1),
   mapping_source: z.literal("configured_principal_binding"),
-});
+}).describe(principalBindingSemantics);
 export type DataPlanePrincipal = z.infer<typeof DataPlanePrincipalSchema>;
 
 export const SimulationEventKind = z.enum([

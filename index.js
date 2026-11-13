@@ -26,13 +26,14 @@ const PolicyDecisionSchema = z.object({decision:z.enum(['allow','deny']),rationa
 const ExecutionContextSchema = z.object({execution_id:z.string().min(1),parent_span_id:z.string().min(1),simulation_resolution:z.string().min(1),repo_name:z.string().min(1)});
 const ResultPacketSchema = z.object({execution_id:z.string().min(1),repo_name:z.string().min(1),result:CoreExecutionResultSchema});
 
+const principalBindingSemantics = 'Configured IAM principal bindings MUST map each case-insensitively unique principal email to exactly one non-empty string organization_id. Duplicate canonical principals, malformed principal keys, and non-string or empty organization identifiers MUST fail closed at startup and request time instead of being overwritten or coerced.';
 const DataPlanePrincipalSchema = z.object({
   subject: z.string().min(1),
   principal: z.string().email(),
   organization_id: z.string().min(1),
   audience: z.string().min(1),
   mapping_source: z.literal('configured_principal_binding')
-});
+}).describe(principalBindingSemantics);
 const IdentityApiKeyLookupSchema = z.object({
   key_hash: z.string().regex(/^[a-f0-9]{64}$/)
 }).strict();

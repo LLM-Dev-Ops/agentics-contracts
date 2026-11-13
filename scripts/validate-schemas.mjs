@@ -138,6 +138,16 @@ if (contracts.IdentityEntitlementResponseSchema.shape.max_api_keys.description !
 requireInvalid('identity-cli-session-authorize', {
   session_code: 'ABCD1234', organization_id: organizationId,
 });
+const principalBindingSemantics = 'Configured IAM principal bindings MUST map each case-insensitively unique principal email to exactly one non-empty string organization_id. Duplicate canonical principals, malformed principal keys, and non-string or empty organization identifiers MUST fail closed at startup and request time instead of being overwritten or coerced.';
+const principalAuthority = schemas.find(({ schema }) =>
+  schema.$id === 'https://agentics.org/contracts/data-plane/v1/principal.schema.json'
+)?.schema;
+if (principalAuthority?.description !== principalBindingSemantics) {
+  throw new Error('principal contract lacks unambiguous principal-to-tenant binding semantics');
+}
+if (contracts.DataPlanePrincipalSchema.description !== principalBindingSemantics) {
+  throw new Error('principal runtime validator drifted from principal-to-tenant binding semantics');
+}
 const sessionExpirySemantics = 'Session expiry MUST be evaluated after the session row lock is acquired, using a non-transaction-start persistence wall clock in the same transaction for authorization and polling; transaction-start timestamps and service-process clock comparisons are forbidden.';
 const ownerAuthorizationSemantics = "CLI session authorization MUST be performed by an active tenant membership with role owner, resolved from the verified issuer and subject; caller-supplied tenant ownership is forbidden. The provider MUST revalidate the row-locked session's persisted requested scopes as a non-empty unique subset of the current allowlist before API-key creation; malformed, duplicate, empty, unsupported, or retired persisted scopes MUST fail closed. " + sessionExpirySemantics;
 const authorizeAuthority = schemas.find(({ schema }) =>
