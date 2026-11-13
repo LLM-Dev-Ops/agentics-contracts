@@ -92,7 +92,7 @@ const IdentityCliSessionPollSchema = z.union([
     organization_id: z.string().min(1),
     role: z.literal('owner')
   }).strict().describe(
-    'A completed CLI session MUST deliver api_key only while the original authorizing membership remains active and bound to the same organization and the issued key remains active, unrevoked, and unexpired. API-key delivery is one-time.'
+    'A completed CLI session MUST deliver api_key only while the original authorizing membership remains active and bound to the same organization and the issued key remains active, unrevoked, and unexpired. Membership and key state MUST be row-locked in the same serializable delivery transaction. API-key delivery is one-time.'
   )
 ]);
 const SimulationEventKind = z.enum([

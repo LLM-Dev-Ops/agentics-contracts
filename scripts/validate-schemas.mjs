@@ -122,7 +122,7 @@ requireValid('identity-cli-session-poll', {
   status: 'completed', email: 'owner@example.com', payment_status: 'paid',
   organization_id: organizationId, role: 'owner', api_key: 'ag_live_one_time',
 });
-const deliveryBindingSemantics = 'A completed CLI session MUST deliver api_key only while the original authorizing membership remains active and bound to the same organization and the issued key remains active, unrevoked, and unexpired. API-key delivery is one-time.';
+const deliveryBindingSemantics = 'A completed CLI session MUST deliver api_key only while the original authorizing membership remains active and bound to the same organization and the issued key remains active, unrevoked, and unexpired. Membership and key state MUST be row-locked in the same serializable delivery transaction. API-key delivery is one-time.';
 const pollAuthority = schemas.find(({ schema }) =>
   schema.$id === 'https://agentics.org/contracts/data-plane/v1/identity-cli-session-poll.schema.json'
 )?.schema;
