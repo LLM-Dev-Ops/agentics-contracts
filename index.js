@@ -40,11 +40,12 @@ const IdentityScopeListSchema = z.array(z.string().min(1)).refine(
   (scopes) => new Set(scopes).size === scopes.length,
   { message: 'Scopes must be unique' }
 );
+const activeApiKeyScopeSemantics = "An active API key response MUST contain a unique scope list that remains a subset of the provider's current allowlist; malformed, duplicate, or retired scopes MUST fail closed and MUST NOT resolve as an active key.";
 const IdentityApiKeyResponseSchema = z.object({
   key_id: z.string().uuid(),
   organization_id: z.string().min(1),
   name: z.string().min(1),
-  scopes: IdentityScopeListSchema,
+  scopes: IdentityScopeListSchema.describe(activeApiKeyScopeSemantics),
   created_at: z.string().datetime(),
   expires_at: z.string().datetime().nullable(),
   last_used_at: z.string().datetime().nullable()
