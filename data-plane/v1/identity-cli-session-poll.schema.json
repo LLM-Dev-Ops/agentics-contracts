@@ -11,6 +11,7 @@
     },
     {
       "type": "object",
+      "description": "A completed CLI session MUST deliver api_key only while the original authorizing membership remains active and bound to the same organization and the issued key remains active, unrevoked, and unexpired. API-key delivery is one-time.",
       "additionalProperties": false,
       "required": ["status", "email", "payment_status", "organization_id", "role"],
       "properties": {

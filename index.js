@@ -91,7 +91,9 @@ const IdentityCliSessionPollSchema = z.union([
     payment_status: z.enum(['paid','unpaid','trial','internal']),
     organization_id: z.string().min(1),
     role: z.literal('owner')
-  }).strict()
+  }).strict().describe(
+    'A completed CLI session MUST deliver api_key only while the original authorizing membership remains active and bound to the same organization and the issued key remains active, unrevoked, and unexpired. API-key delivery is one-time.'
+  )
 ]);
 const SimulationEventKind = z.enum([
   'created','started','step_started','step_completed','log','metric',

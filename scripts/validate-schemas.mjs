@@ -122,5 +122,15 @@ requireValid('identity-cli-session-poll', {
   status: 'completed', email: 'owner@example.com', payment_status: 'paid',
   organization_id: organizationId, role: 'owner', api_key: 'ag_live_one_time',
 });
+const deliveryBindingSemantics = 'A completed CLI session MUST deliver api_key only while the original authorizing membership remains active and bound to the same organization and the issued key remains active, unrevoked, and unexpired. API-key delivery is one-time.';
+const pollAuthority = schemas.find(({ schema }) =>
+  schema.$id === 'https://agentics.org/contracts/data-plane/v1/identity-cli-session-poll.schema.json'
+)?.schema;
+if (pollAuthority?.oneOf?.[1]?.description !== deliveryBindingSemantics) {
+  throw new Error('identity-cli-session-poll lacks delivery-time tenant and key binding semantics');
+}
+if (contracts.IdentityCliSessionPollSchema.options?.[1]?.description !== deliveryBindingSemantics) {
+  throw new Error('identity-cli-session-poll runtime validator drifted from delivery binding semantics');
+}
 
 console.log(`validated ${files.length} authoritative schemas`);
