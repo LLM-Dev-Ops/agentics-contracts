@@ -8,6 +8,6 @@
     "cli_name": { "type": "string", "minLength": 1, "maxLength": 255 },
     "cli_version": { "type": "string", "minLength": 1, "maxLength": 255 },
     "hostname": { "type": "string", "minLength": 1, "maxLength": 255 },
-    "scopes": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true }
+    "scopes": { "type": "array", "items": { "type": "string", "minLength": 1 }, "minItems": 1, "uniqueItems": true }
   }
 }
