@@ -82,6 +82,14 @@ const duplicateScopeResponse = {
 };
 requireInvalid('identity-api-key-response', duplicateScopeResponse);
 requireRuntimeInvalid(contracts.IdentityApiKeyResponseSchema, duplicateScopeResponse, 'identity-api-key-response');
+const activeApiKeyScopeSemantics = "An active API key response MUST contain a unique scope list that remains a subset of the provider's current allowlist; malformed, duplicate, or retired scopes MUST fail closed and MUST NOT resolve as an active key.";
+const apiKeyResponseSchema = schemas.find(({ file }) => file.endsWith('identity-api-key-response.schema.json'))?.schema;
+if (apiKeyResponseSchema?.properties?.scopes?.description !== activeApiKeyScopeSemantics) {
+  throw new Error('identity-api-key-response lacks active allowlist scope semantics');
+}
+if (contracts.IdentityApiKeyResponseSchema.shape.scopes.description !== activeApiKeyScopeSemantics) {
+  throw new Error('identity-api-key-response runtime validator drifted from active allowlist scope semantics');
+}
 requireValid('identity-entitlement-response', {
   organization_id: organizationId, plan: 'developer', max_requests: 10000,
   max_tokens: 1000000, max_api_keys: 10,
