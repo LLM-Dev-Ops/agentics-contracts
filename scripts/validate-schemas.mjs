@@ -185,6 +185,16 @@ requireRuntimeInvalid(
   emptyScopeCreate,
   'identity-cli-session-create empty scopes',
 );
+const identityScopeConfigurationSemantics = 'Provider identity scope configuration MUST define non-empty allowed and default scope lists containing non-empty strings without surrounding whitespace, unique within each list, with every default scope present in the allowed list. Malformed, duplicate, empty, whitespace-padded, or unsupported configured scopes MUST fail closed at startup and request time instead of being normalized or deduplicated.';
+const createAuthority = schemas.find(({ schema }) =>
+  schema.$id === 'https://agentics.org/contracts/data-plane/v1/identity-cli-session-create.schema.json'
+)?.schema;
+if (createAuthority?.description !== identityScopeConfigurationSemantics) {
+  throw new Error('identity-cli-session-create lacks strict scope configuration semantics');
+}
+if (contracts.IdentityCliSessionCreateSchema.description !== identityScopeConfigurationSemantics) {
+  throw new Error('identity-cli-session-create runtime validator drifted from scope configuration semantics');
+}
 const duplicateScopeAuthorization = {
   session_code: 'ABCD1234', scopes: ['simulation:run', 'simulation:run'],
 };

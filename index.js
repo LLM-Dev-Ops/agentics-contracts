@@ -60,12 +60,13 @@ const IdentityEntitlementResponseSchema = z.object({
   max_tokens: z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER).describe(losslessEntitlementSemantics),
   max_api_keys: z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER).describe(apiKeyLimitSemantics)
 }).strict();
+const identityScopeConfigurationSemantics = 'Provider identity scope configuration MUST define non-empty allowed and default scope lists containing non-empty strings without surrounding whitespace, unique within each list, with every default scope present in the allowed list. Malformed, duplicate, empty, whitespace-padded, or unsupported configured scopes MUST fail closed at startup and request time instead of being normalized or deduplicated.';
 const IdentityCliSessionCreateSchema = z.object({
   cli_name: z.string().min(1).max(255).optional(),
   cli_version: z.string().min(1).max(255).optional(),
   hostname: z.string().min(1).max(255).optional(),
   scopes: IdentityScopeListSchema.optional()
-}).strict();
+}).strict().describe(identityScopeConfigurationSemantics);
 const IdentityCliSessionCreatedSchema = z.object({
   session_code: z.string().regex(/^[A-Z0-9]{8}$/),
   device_code: z.string().regex(/^[a-f0-9]{64}$/),
