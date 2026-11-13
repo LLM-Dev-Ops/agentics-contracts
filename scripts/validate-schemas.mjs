@@ -138,7 +138,7 @@ if (contracts.IdentityEntitlementResponseSchema.shape.max_api_keys.description !
 requireInvalid('identity-cli-session-authorize', {
   session_code: 'ABCD1234', organization_id: organizationId,
 });
-const ownerAuthorizationSemantics = 'CLI session authorization MUST be performed by an active tenant membership with role owner, resolved from the verified issuer and subject; caller-supplied tenant ownership is forbidden.';
+const ownerAuthorizationSemantics = "CLI session authorization MUST be performed by an active tenant membership with role owner, resolved from the verified issuer and subject; caller-supplied tenant ownership is forbidden. The provider MUST revalidate the row-locked session's persisted requested scopes as a non-empty unique subset of the current allowlist before API-key creation; malformed, duplicate, empty, unsupported, or retired persisted scopes MUST fail closed.";
 const authorizeAuthority = schemas.find(({ schema }) =>
   schema.$id === 'https://agentics.org/contracts/data-plane/v1/identity-cli-session-authorize.schema.json'
 )?.schema;
