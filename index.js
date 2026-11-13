@@ -49,11 +49,12 @@ const IdentityApiKeyResponseSchema = z.object({
   expires_at: z.string().datetime().nullable(),
   last_used_at: z.string().datetime().nullable()
 }).strict();
+const losslessEntitlementSemantics = 'Entitlement limits MUST be non-negative safe JSON integers no greater than 9007199254740991; providers MUST fail closed instead of rounding larger persisted BIGINT values.';
 const IdentityEntitlementResponseSchema = z.object({
   organization_id: z.string().min(1),
   plan: z.enum(['free','developer','team','enterprise']),
-  max_requests: z.number().int().nonnegative(),
-  max_tokens: z.number().int().nonnegative(),
+  max_requests: z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER).describe(losslessEntitlementSemantics),
+  max_tokens: z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER).describe(losslessEntitlementSemantics),
   max_api_keys: z.number().int().nonnegative().describe(
     'Maximum concurrently active, unrevoked, unexpired API keys permitted for the organization. Key creation MUST be denied when the current count is greater than or equal to this limit.'
   )
