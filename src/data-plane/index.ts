@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-const principalBindingSemantics = "Configured IAM principal bindings MUST map each case-insensitively unique principal email to exactly one non-empty string organization_id. Duplicate canonical principals, malformed principal keys, and non-string or empty organization identifiers MUST fail closed at startup and request time instead of being overwritten or coerced.";
+const principalBindingSemantics = "Configured IAM principal bindings MUST map each case-insensitively unique principal email to exactly one non-empty string organization_id. Identity-provider caller allowlists MUST contain non-empty, case-insensitively unique principal emails without surrounding whitespace. Duplicate canonical principals, malformed or whitespace-padded principal entries, and non-string or empty organization identifiers MUST fail closed at startup and request time instead of being overwritten or coerced.";
 export const DataPlanePrincipalSchema = z.object({
   subject: z.string().min(1),
   principal: z.string().email(),

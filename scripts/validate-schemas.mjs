@@ -138,7 +138,7 @@ if (contracts.IdentityEntitlementResponseSchema.shape.max_api_keys.description !
 requireInvalid('identity-cli-session-authorize', {
   session_code: 'ABCD1234', organization_id: organizationId,
 });
-const principalBindingSemantics = 'Configured IAM principal bindings MUST map each case-insensitively unique principal email to exactly one non-empty string organization_id. Duplicate canonical principals, malformed principal keys, and non-string or empty organization identifiers MUST fail closed at startup and request time instead of being overwritten or coerced.';
+const principalBindingSemantics = 'Configured IAM principal bindings MUST map each case-insensitively unique principal email to exactly one non-empty string organization_id. Identity-provider caller allowlists MUST contain non-empty, case-insensitively unique principal emails without surrounding whitespace. Duplicate canonical principals, malformed or whitespace-padded principal entries, and non-string or empty organization identifiers MUST fail closed at startup and request time instead of being overwritten or coerced.';
 const principalAuthority = schemas.find(({ schema }) =>
   schema.$id === 'https://agentics.org/contracts/data-plane/v1/principal.schema.json'
 )?.schema;
