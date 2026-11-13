@@ -86,10 +86,30 @@ requireValid('identity-entitlement-response', {
   organization_id: organizationId, plan: 'developer', max_requests: 10000,
   max_tokens: 1000000, max_api_keys: 10,
 });
+const losslessEntitlementSemantics = 'Entitlement limits MUST be non-negative safe JSON integers no greater than 9007199254740991; providers MUST fail closed instead of rounding larger persisted BIGINT values.';
+const unsafeEntitlement = {
+  organization_id: organizationId, plan: 'enterprise', max_requests: 9007199254740992,
+  max_tokens: 1000000, max_api_keys: 10,
+};
+requireInvalid('identity-entitlement-response', unsafeEntitlement);
+requireRuntimeInvalid(
+  contracts.IdentityEntitlementResponseSchema,
+  unsafeEntitlement,
+  'identity-entitlement-response',
+);
 const apiKeyLimitSemantics = 'Maximum concurrently active, unrevoked, unexpired API keys permitted for the organization. Key creation MUST be denied when the current count is greater than or equal to this limit.';
 const entitlementAuthority = schemas.find(({ schema }) =>
   schema.$id === 'https://agentics.org/contracts/data-plane/v1/identity-entitlement-response.schema.json'
 )?.schema;
+for (const field of ['max_requests', 'max_tokens']) {
+  if (entitlementAuthority?.properties?.[field]?.maximum !== Number.MAX_SAFE_INTEGER ||
+      entitlementAuthority?.properties?.[field]?.description !== losslessEntitlementSemantics) {
+    throw new Error(`identity-entitlement-response lacks lossless ${field} semantics`);
+  }
+  if (contracts.IdentityEntitlementResponseSchema.shape[field].description !== losslessEntitlementSemantics) {
+    throw new Error(`identity-entitlement-response runtime validator drifted from lossless ${field} semantics`);
+  }
+}
 if (entitlementAuthority?.properties?.max_api_keys?.description !== apiKeyLimitSemantics) {
   throw new Error('identity-entitlement-response lacks authoritative max_api_keys enforcement semantics');
 }
