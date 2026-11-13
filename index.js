@@ -76,7 +76,9 @@ const IdentityCliSessionAuthorizeSchema = z.object({
   session_code: z.string().regex(/^[A-Z0-9]{8}$/),
   key_name: z.string().min(1).max(255).optional(),
   scopes: IdentityScopeListSchema.optional()
-}).strict();
+}).strict().describe(
+  'CLI session authorization MUST be performed by an active tenant membership with role owner, resolved from the verified issuer and subject; caller-supplied tenant ownership is forbidden.'
+);
 const IdentityCliSessionAuthorizedSchema = z.object({
   success: z.literal(true),
   organization_id: z.string().min(1),
