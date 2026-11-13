@@ -148,6 +148,16 @@ if (authorizeAuthority?.description !== ownerAuthorizationSemantics) {
 if (contracts.IdentityCliSessionAuthorizeSchema.description !== ownerAuthorizationSemantics) {
   throw new Error('identity-cli-session-authorize runtime validator drifted from owner-role semantics');
 }
+const authorizationReplaySemantics = 'When replaying a completed CLI session, the provider MUST return key_id only after row-locking an active, unrevoked, unexpired API key owned by the same authenticated organization; missing, cross-tenant, revoked, or expired key references MUST fail closed.';
+const authorizedAuthority = schemas.find(({ schema }) =>
+  schema.$id === 'https://agentics.org/contracts/data-plane/v1/identity-cli-session-authorized.schema.json'
+)?.schema;
+if (authorizedAuthority?.description !== authorizationReplaySemantics) {
+  throw new Error('identity-cli-session-authorized lacks tenant-bound replay semantics');
+}
+if (contracts.IdentityCliSessionAuthorizedSchema.description !== authorizationReplaySemantics) {
+  throw new Error('identity-cli-session-authorized runtime validator drifted from tenant-bound replay semantics');
+}
 const duplicateScopeCreate = {
   scopes: ['simulation:run', 'simulation:run'],
 };
