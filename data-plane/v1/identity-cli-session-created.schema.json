@@ -1,0 +1,17 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://agentics.org/contracts/data-plane/v1/identity-cli-session-created.schema.json",
+  "title": "CLI device authorization session create response",
+  "description": "CLI session creation MUST insert the provisional session and validate the complete create response inside one serializable transaction before COMMIT. Response construction or validation failure MUST roll back the provisional session so an error cannot leave a durable orphaned session. After provisional insertion has acquired storage constraints, the provider MUST refresh expires_at from a non-transaction-start persistence wall clock, construct and validate the response from that refreshed expiry, and recheck that the session remains unexpired immediately before COMMIT. A session that expires during creation MUST roll back instead of returning an already-expired session with a fresh lifetime claim.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["session_code", "device_code", "verification_url", "expires_at", "expires_in_seconds", "poll_interval_seconds"],
+  "properties": {
+    "session_code": { "type": "string", "pattern": "^[A-Z0-9]{8}$" },
+    "device_code": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "verification_url": { "type": "string", "format": "uri" },
+    "expires_at": { "type": "string", "format": "date-time" },
+    "expires_in_seconds": { "const": 600 },
+    "poll_interval_seconds": { "const": 5 }
+  }
+}

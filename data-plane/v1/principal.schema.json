@@ -1,0 +1,16 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://agentics.org/contracts/data-plane/v1/principal.schema.json",
+  "title": "Data Plane Principal",
+  "description": "Configured IAM principal bindings MUST map each case-insensitively unique principal email to exactly one non-empty string organization_id. Identity-provider caller allowlists MUST contain non-empty, case-insensitively unique principal emails without surrounding whitespace. Duplicate canonical principals, malformed or whitespace-padded principal entries, and non-string or empty organization identifiers MUST fail closed at startup and request time instead of being overwritten or coerced.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["subject", "principal", "organization_id", "audience", "mapping_source"],
+  "properties": {
+    "subject": { "type": "string", "minLength": 1 },
+    "principal": { "type": "string", "format": "email" },
+    "organization_id": { "type": "string", "minLength": 1 },
+    "audience": { "type": "string", "minLength": 1 },
+    "mapping_source": { "const": "configured_principal_binding" }
+  }
+}

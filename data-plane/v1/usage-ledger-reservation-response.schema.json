@@ -1,0 +1,30 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://agentics.org/contracts/data-plane/v1/usage-ledger-reservation-response.schema.json",
+  "title": "Tenant-bound usage ledger reservation response",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["organization_id", "replayed", "reservation"],
+  "properties": {
+    "organization_id": { "type": "string", "minLength": 1 },
+    "replayed": { "type": "boolean" },
+    "reservation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "amount", "status", "correlation_id", "user_id", "service", "run_id", "metadata", "expires_at", "created_at", "updated_at"],
+      "properties": {
+        "id": { "type": "string", "format": "uuid" },
+        "amount": { "type": "string", "pattern": "^(?=.*[1-9])[0-9]+(\\.[0-9]{1,6})?$" },
+        "status": { "enum": ["active", "consumed", "cancelled", "expired"] },
+        "correlation_id": { "type": "string", "minLength": 1 },
+        "user_id": { "type": ["string", "null"] },
+        "service": { "type": ["string", "null"] },
+        "run_id": { "type": ["string", "null"] },
+        "metadata": { "type": "object" },
+        "expires_at": { "type": "string", "format": "date-time" },
+        "created_at": { "type": "string", "format": "date-time" },
+        "updated_at": { "type": "string", "format": "date-time" }
+      }
+    }
+  }
+}

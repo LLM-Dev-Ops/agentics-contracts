@@ -1,0 +1,14 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://agentics.org/contracts/data-plane/v1/identity-cli-session-authorize.schema.json",
+  "title": "JWT-authorized CLI session completion request",
+  "description": "CLI session authorization MUST be performed by an active tenant membership with role owner, resolved from the verified issuer and subject; caller-supplied tenant ownership is forbidden. The verified issuer and subject MUST resolve to exactly one active tenant membership before CLI session access; zero or multiple active memberships MUST fail closed instead of selecting an arbitrary organization. The provider MUST revalidate the row-locked session's persisted requested scopes as a non-empty unique subset of the current allowlist before API-key creation; malformed, duplicate, empty, unsupported, or retired persisted scopes MUST fail closed. A completed authorization replay that supplies key_name or scopes MUST match the row-locked referenced key; scopes are compared as an unordered unique set. Any conflicting replay MUST fail closed before the success response, while omitted optional fields remain idempotent. Session expiry MUST be evaluated after the session row lock is acquired, using a non-transaction-start persistence wall clock in the same transaction for authorization and polling; transaction-start timestamps and service-process clock comparisons are forbidden. Before inserting an API key or completing a CLI session, the provider MUST validate both the complete authorization response and the prospective completed-poll delivery response against their authorities using the row-locked membership and generated key data; validation failure MUST roll back without key insertion or session mutation. After acquiring every relevant blocking membership, session, tenant-quota, and referenced-key lock, the provider MUST re-evaluate session expiry with a non-transaction-start persistence wall clock immediately before authorization commit, replay response, plaintext delivery, or delivery-copy erasure; expiry MUST roll back without key insertion, session mutation, disclosure, or erasure. After response validation and any provisional API-key insertion, session completion, or delivery-copy erasure, the provider MUST re-evaluate session expiry with a non-transaction-start persistence wall clock immediately before COMMIT; expiry MUST roll back every provisional change and prevent response or plaintext disclosure. A check performed only before those writes is insufficient.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["session_code"],
+  "properties": {
+    "session_code": { "type": "string", "pattern": "^[A-Z0-9]{8}$" },
+    "key_name": { "type": "string", "minLength": 1, "maxLength": 255 },
+    "scopes": { "type": "array", "items": { "type": "string", "minLength": 1 }, "minItems": 1, "uniqueItems": true }
+  }
+}

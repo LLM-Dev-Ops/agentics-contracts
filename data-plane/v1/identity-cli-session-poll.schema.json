@@ -1,0 +1,27 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://agentics.org/contracts/data-plane/v1/identity-cli-session-poll.schema.json",
+  "title": "CLI device authorization poll response",
+  "oneOf": [
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status"],
+      "properties": { "status": { "enum": ["pending", "authorized"] } }
+    },
+    {
+      "type": "object",
+      "description": "A completed CLI session MUST deliver api_key only while the original authorizing membership remains active and bound to the same organization and the issued key remains active, unrevoked, unexpired, with persisted scopes that remain a non-empty unique subset of the current allowlist. Membership and key state MUST be row-locked in the same serializable delivery transaction. Completed-session delivery state MUST be unambiguous: before first delivery encrypted_api_key is present and key_delivered_at is null; after delivery encrypted_api_key is null and key_delivered_at is non-null. Any other combination MUST fail closed before referenced-key access, plaintext disclosure, erasure, or a completed response. Every completed-session poll, including polls after the one-time delivery copy has been erased, MUST row-lock and revalidate the referenced tenant key as active, unrevoked, unexpired, and carrying a non-empty unique scope list within the provider's current allowlist before returning completed tenant or membership data. Missing, cross-tenant, revoked, expired, malformed-scope, or retired-scope key references MUST fail closed without a completed response. After completed-response validation and any provisional delivery-copy erasure, the provider MUST re-evaluate the row-locked referenced key with a non-transaction-start persistence wall clock immediately before COMMIT. A key that expires before commit MUST roll back erasure and prevent completed metadata or plaintext disclosure. API-key expiry MUST be evaluated after the referenced key row lock is acquired, using a non-transaction-start persistence wall clock in the same serializable transaction; transaction-start timestamps and service-process clock comparisons are forbidden. Malformed, empty, duplicate, or retired key scopes MUST fail closed before delivery or erasure. The encrypted delivery copy MUST be authenticated with associated data binding the session_code, organization_id, and key_id; swapping the ciphertext or any binding field between sessions MUST fail closed before plaintext delivery or erasure. The decrypted api_key MUST hash to the referenced active key_id before delivery or erasure. The provider MUST validate the complete completed-session response against this authority before erasing the encrypted delivery copy or committing the delivery transaction; response-validation failure MUST roll back without erasure. API-key delivery is one-time. Session expiry MUST be evaluated after the session row lock is acquired, using a non-transaction-start persistence wall clock in the same transaction for authorization and polling; transaction-start timestamps and service-process clock comparisons are forbidden. After acquiring every relevant blocking membership, session, tenant-quota, and referenced-key lock, the provider MUST re-evaluate session expiry with a non-transaction-start persistence wall clock immediately before authorization commit, replay response, plaintext delivery, or delivery-copy erasure; expiry MUST roll back without key insertion, session mutation, disclosure, or erasure. After response validation and any provisional API-key insertion, session completion, or delivery-copy erasure, the provider MUST re-evaluate session expiry with a non-transaction-start persistence wall clock immediately before COMMIT; expiry MUST roll back every provisional change and prevent response or plaintext disclosure. A check performed only before those writes is insufficient.",
+      "additionalProperties": false,
+      "required": ["status", "email", "payment_status", "organization_id", "role"],
+      "properties": {
+        "status": { "const": "completed" },
+        "api_key": { "type": "string", "minLength": 1 },
+        "email": { "type": "string", "format": "email" },
+        "payment_status": { "enum": ["paid", "unpaid", "trial", "internal"] },
+        "organization_id": { "type": "string", "minLength": 1 },
+        "role": { "const": "owner" }
+      }
+    }
+  ]
+}
