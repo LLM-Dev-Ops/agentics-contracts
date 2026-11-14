@@ -80,19 +80,20 @@ const sessionExpirySemantics = 'Session expiry MUST be evaluated after the sessi
 const apiKeyExpirySemantics = 'API-key expiry MUST be evaluated after the referenced key row lock is acquired, using a non-transaction-start persistence wall clock in the same serializable transaction; transaction-start timestamps and service-process clock comparisons are forbidden.';
 const replayIdentityOrderSemantics = 'Completed-session replay MUST compare the persisted authorizing issuer, subject, and organization to the verified active membership immediately after the session row lock and before evaluating session expiry or accessing the referenced API key; a mismatch MUST fail closed without disclosing session expiry or key state.';
 const deliveryResponseSemantics = 'The provider MUST validate the complete completed-session response against this authority before erasing the encrypted delivery copy or committing the delivery transaction; response-validation failure MUST roll back without erasure.';
+const authorizationPrecommitSemantics = 'Before inserting an API key or completing a CLI session, the provider MUST validate both the complete authorization response and the prospective completed-poll delivery response against their authorities using the row-locked membership and generated key data; validation failure MUST roll back without key insertion or session mutation.';
 const IdentityCliSessionAuthorizeSchema = z.object({
   session_code: z.string().regex(/^[A-Z0-9]{8}$/),
   key_name: z.string().min(1).max(255).optional(),
   scopes: IdentityScopeListSchema.optional()
 }).strict().describe(
-  "CLI session authorization MUST be performed by an active tenant membership with role owner, resolved from the verified issuer and subject; caller-supplied tenant ownership is forbidden. The verified issuer and subject MUST resolve to exactly one active tenant membership before CLI session access; zero or multiple active memberships MUST fail closed instead of selecting an arbitrary organization. The provider MUST revalidate the row-locked session's persisted requested scopes as a non-empty unique subset of the current allowlist before API-key creation; malformed, duplicate, empty, unsupported, or retired persisted scopes MUST fail closed. " + sessionExpirySemantics
+  "CLI session authorization MUST be performed by an active tenant membership with role owner, resolved from the verified issuer and subject; caller-supplied tenant ownership is forbidden. The verified issuer and subject MUST resolve to exactly one active tenant membership before CLI session access; zero or multiple active memberships MUST fail closed instead of selecting an arbitrary organization. The provider MUST revalidate the row-locked session's persisted requested scopes as a non-empty unique subset of the current allowlist before API-key creation; malformed, duplicate, empty, unsupported, or retired persisted scopes MUST fail closed. " + sessionExpirySemantics + ' ' + authorizationPrecommitSemantics
 );
 const IdentityCliSessionAuthorizedSchema = z.object({
   success: z.literal(true),
   organization_id: z.string().min(1),
   key_id: z.string().uuid()
 }).strict().describe(
-  'When replaying a completed CLI session, the provider MUST require the same verified issuer and subject that originally authorized the session, then return key_id only after row-locking an active, unrevoked, unexpired API key owned by the same authenticated organization whose persisted scopes remain a non-empty unique subset of the current allowlist; missing or mismatched authorizing identity, cross-tenant, malformed, empty, duplicate, retired-scope, revoked, or expired key references MUST fail closed. ' + replayIdentityOrderSemantics + ' ' + apiKeyExpirySemantics
+  'When replaying a completed CLI session, the provider MUST require the same verified issuer and subject that originally authorized the session, then return key_id only after row-locking an active, unrevoked, unexpired API key owned by the same authenticated organization whose persisted scopes remain a non-empty unique subset of the current allowlist; missing or mismatched authorizing identity, cross-tenant, malformed, empty, duplicate, retired-scope, revoked, or expired key references MUST fail closed. ' + replayIdentityOrderSemantics + ' ' + apiKeyExpirySemantics + ' ' + authorizationPrecommitSemantics
 );
 const IdentityCliSessionPollSchema = z.union([
   z.object({ status: z.enum(['pending','authorized']) }).strict(),
