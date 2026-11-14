@@ -42,6 +42,7 @@ const IdentityScopeListSchema = z.array(z.string().min(1)).min(1).refine(
   { message: 'Scopes must be unique' }
 );
 const activeApiKeyScopeSemantics = "An active API key response MUST contain a non-empty unique scope list that remains a subset of the provider's current allowlist; empty, malformed, duplicate, or retired scopes MUST fail closed and MUST NOT resolve as an active key.";
+const activeLookupTransactionSemantics = 'API-key and entitlement lookup MUST row-lock the matching key in a serializable transaction before evaluating active, revocation, expiry, or current-scope state. Expiry MUST be evaluated with a non-transaction-start persistence wall clock after the lock and rechecked after response validation immediately before COMMIT; unknown, inactive, concurrently revoked, expired, or invalid-scope keys MUST fail closed without disclosure. Entitlement lookup MUST also row-lock the resolved organization entitlement before response validation.';
 const IdentityApiKeyResponseSchema = z.object({
   key_id: z.string().uuid(),
   organization_id: z.string().min(1),
@@ -50,7 +51,7 @@ const IdentityApiKeyResponseSchema = z.object({
   created_at: z.string().datetime(),
   expires_at: z.string().datetime().nullable(),
   last_used_at: z.string().datetime().nullable()
-}).strict();
+}).strict().describe(activeLookupTransactionSemantics);
 const losslessEntitlementSemantics = 'Entitlement limits MUST be non-negative safe JSON integers no greater than 9007199254740991; providers MUST fail closed instead of rounding larger persisted BIGINT values.';
 const apiKeyLimitSemantics = 'Maximum concurrently active, unrevoked, unexpired API keys permitted for the organization. Key creation MUST be denied when the current count is greater than or equal to this limit. The active-key count MUST evaluate expiry after acquiring the per-tenant key-creation serialization lock, using a non-transaction-start persistence wall clock in the same transaction; transaction-start timestamps and service-process clock comparisons are forbidden. The limit and active count MUST remain lossless across persistence, aggregation and JSON serialization for the full safe-integer range. This value MUST be a non-negative safe JSON integer no greater than 9007199254740991; providers MUST fail closed instead of rounding a larger persisted BIGINT value.';
 const entitlementActiveKeySemantics = "Entitlement lookup MUST resolve only for an active, unrevoked, unexpired API key whose persisted scopes remain a non-empty unique subset of the provider's current allowlist. Empty, malformed, duplicate, unsupported, or retired scopes MUST fail closed with the same non-disclosing response as an unknown or inactive key.";
@@ -60,7 +61,7 @@ const IdentityEntitlementResponseSchema = z.object({
   max_requests: z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER).describe(losslessEntitlementSemantics),
   max_tokens: z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER).describe(losslessEntitlementSemantics),
   max_api_keys: z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER).describe(apiKeyLimitSemantics)
-}).strict().describe(entitlementActiveKeySemantics);
+}).strict().describe(entitlementActiveKeySemantics + ' ' + activeLookupTransactionSemantics);
 const identityScopeConfigurationSemantics = 'Provider identity scope configuration MUST define non-empty allowed and default scope lists containing non-empty strings without surrounding whitespace, unique within each list, with every default scope present in the allowed list. Malformed, duplicate, empty, whitespace-padded, or unsupported configured scopes MUST fail closed at startup and request time instead of being normalized or deduplicated.';
 const IdentityCliSessionCreateSchema = z.object({
   cli_name: z.string().min(1).max(255).optional(),

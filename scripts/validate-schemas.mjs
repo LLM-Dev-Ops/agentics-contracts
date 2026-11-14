@@ -83,12 +83,17 @@ const duplicateScopeResponse = {
 requireInvalid('identity-api-key-response', duplicateScopeResponse);
 requireRuntimeInvalid(contracts.IdentityApiKeyResponseSchema, duplicateScopeResponse, 'identity-api-key-response');
 const activeApiKeyScopeSemantics = "An active API key response MUST contain a non-empty unique scope list that remains a subset of the provider's current allowlist; empty, malformed, duplicate, or retired scopes MUST fail closed and MUST NOT resolve as an active key.";
+const activeLookupTransactionSemantics = 'API-key and entitlement lookup MUST row-lock the matching key in a serializable transaction before evaluating active, revocation, expiry, or current-scope state. Expiry MUST be evaluated with a non-transaction-start persistence wall clock after the lock and rechecked after response validation immediately before COMMIT; unknown, inactive, concurrently revoked, expired, or invalid-scope keys MUST fail closed without disclosure. Entitlement lookup MUST also row-lock the resolved organization entitlement before response validation.';
 const apiKeyResponseSchema = schemas.find(({ file }) => file.endsWith('identity-api-key-response.schema.json'))?.schema;
 if (apiKeyResponseSchema?.properties?.scopes?.description !== activeApiKeyScopeSemantics) {
   throw new Error('identity-api-key-response lacks active allowlist scope semantics');
 }
 if (contracts.IdentityApiKeyResponseSchema.shape.scopes.description !== activeApiKeyScopeSemantics) {
   throw new Error('identity-api-key-response runtime validator drifted from active allowlist scope semantics');
+}
+if (apiKeyResponseSchema?.description !== activeLookupTransactionSemantics ||
+    contracts.IdentityApiKeyResponseSchema.description !== activeLookupTransactionSemantics) {
+  throw new Error('identity-api-key-response lacks serialized active-key lookup semantics');
 }
 requireValid('identity-entitlement-response', {
   organization_id: organizationId, plan: 'developer', max_requests: 10000,
@@ -120,10 +125,10 @@ const entitlementAuthority = schemas.find(({ schema }) =>
   schema.$id === 'https://agentics.org/contracts/data-plane/v1/identity-entitlement-response.schema.json'
 )?.schema;
 const entitlementActiveKeySemantics = "Entitlement lookup MUST resolve only for an active, unrevoked, unexpired API key whose persisted scopes remain a non-empty unique subset of the provider's current allowlist. Empty, malformed, duplicate, unsupported, or retired scopes MUST fail closed with the same non-disclosing response as an unknown or inactive key.";
-if (entitlementAuthority?.description !== entitlementActiveKeySemantics) {
+if (entitlementAuthority?.description !== entitlementActiveKeySemantics + ' ' + activeLookupTransactionSemantics) {
   throw new Error('identity-entitlement-response lacks active-key scope binding semantics');
 }
-if (contracts.IdentityEntitlementResponseSchema.description !== entitlementActiveKeySemantics) {
+if (contracts.IdentityEntitlementResponseSchema.description !== entitlementActiveKeySemantics + ' ' + activeLookupTransactionSemantics) {
   throw new Error('identity-entitlement-response runtime validator drifted from active-key scope binding semantics');
 }
 for (const field of ['max_requests', 'max_tokens']) {
