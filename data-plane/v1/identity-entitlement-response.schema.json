@@ -2,6 +2,7 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "https://agentics.org/contracts/data-plane/v1/identity-entitlement-response.schema.json",
   "title": "Resolved tenant entitlement response",
+  "description": "Entitlement lookup MUST resolve only for an active, unrevoked, unexpired API key whose persisted scopes remain a non-empty unique subset of the provider's current allowlist. Empty, malformed, duplicate, unsupported, or retired scopes MUST fail closed with the same non-disclosing response as an unknown or inactive key.",
   "type": "object",
   "additionalProperties": false,
   "required": ["organization_id", "plan", "max_requests", "max_tokens", "max_api_keys"],

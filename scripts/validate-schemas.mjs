@@ -119,6 +119,13 @@ const apiKeyLimitSemantics = 'Maximum concurrently active, unrevoked, unexpired 
 const entitlementAuthority = schemas.find(({ schema }) =>
   schema.$id === 'https://agentics.org/contracts/data-plane/v1/identity-entitlement-response.schema.json'
 )?.schema;
+const entitlementActiveKeySemantics = "Entitlement lookup MUST resolve only for an active, unrevoked, unexpired API key whose persisted scopes remain a non-empty unique subset of the provider's current allowlist. Empty, malformed, duplicate, unsupported, or retired scopes MUST fail closed with the same non-disclosing response as an unknown or inactive key.";
+if (entitlementAuthority?.description !== entitlementActiveKeySemantics) {
+  throw new Error('identity-entitlement-response lacks active-key scope binding semantics');
+}
+if (contracts.IdentityEntitlementResponseSchema.description !== entitlementActiveKeySemantics) {
+  throw new Error('identity-entitlement-response runtime validator drifted from active-key scope binding semantics');
+}
 for (const field of ['max_requests', 'max_tokens']) {
   if (entitlementAuthority?.properties?.[field]?.maximum !== Number.MAX_SAFE_INTEGER ||
       entitlementAuthority?.properties?.[field]?.description !== losslessEntitlementSemantics) {
