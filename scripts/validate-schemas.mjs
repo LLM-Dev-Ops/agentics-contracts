@@ -213,6 +213,16 @@ if (createAuthority?.description !== identityScopeConfigurationSemantics) {
 if (contracts.IdentityCliSessionCreateSchema.description !== identityScopeConfigurationSemantics) {
   throw new Error('identity-cli-session-create runtime validator drifted from scope configuration semantics');
 }
+const sessionCreateAtomicitySemantics = 'CLI session creation MUST insert the provisional session and validate the complete create response inside one serializable transaction before COMMIT. Response construction or validation failure MUST roll back the provisional session so an error cannot leave a durable orphaned session.';
+const createdAuthority = schemas.find(({ schema }) =>
+  schema.$id === 'https://agentics.org/contracts/data-plane/v1/identity-cli-session-created.schema.json'
+)?.schema;
+if (createdAuthority?.description !== sessionCreateAtomicitySemantics) {
+  throw new Error('identity-cli-session-created lacks validate-before-commit atomicity semantics');
+}
+if (contracts.IdentityCliSessionCreatedSchema.description !== sessionCreateAtomicitySemantics) {
+  throw new Error('identity-cli-session-created runtime validator drifted from atomicity semantics');
+}
 const duplicateScopeAuthorization = {
   session_code: 'ABCD1234', scopes: ['simulation:run', 'simulation:run'],
 };

@@ -69,6 +69,7 @@ const IdentityCliSessionCreateSchema = z.object({
   hostname: z.string().min(1).max(255).optional(),
   scopes: IdentityScopeListSchema.optional()
 }).strict().describe(identityScopeConfigurationSemantics);
+const sessionCreateAtomicitySemantics = 'CLI session creation MUST insert the provisional session and validate the complete create response inside one serializable transaction before COMMIT. Response construction or validation failure MUST roll back the provisional session so an error cannot leave a durable orphaned session.';
 const IdentityCliSessionCreatedSchema = z.object({
   session_code: z.string().regex(/^[A-Z0-9]{8}$/),
   device_code: z.string().regex(/^[a-f0-9]{64}$/),
@@ -76,7 +77,7 @@ const IdentityCliSessionCreatedSchema = z.object({
   expires_at: z.string().datetime(),
   expires_in_seconds: z.literal(600),
   poll_interval_seconds: z.literal(5)
-}).strict();
+}).strict().describe(sessionCreateAtomicitySemantics);
 const sessionExpirySemantics = 'Session expiry MUST be evaluated after the session row lock is acquired, using a non-transaction-start persistence wall clock in the same transaction for authorization and polling; transaction-start timestamps and service-process clock comparisons are forbidden.';
 const apiKeyExpirySemantics = 'API-key expiry MUST be evaluated after the referenced key row lock is acquired, using a non-transaction-start persistence wall clock in the same serializable transaction; transaction-start timestamps and service-process clock comparisons are forbidden.';
 const replayIdentityOrderSemantics = 'Completed-session replay MUST compare the persisted authorizing issuer, subject, and organization to the verified active membership immediately after the session row lock and before evaluating session expiry or accessing the referenced API key; a mismatch MUST fail closed without disclosing session expiry or key state.';
