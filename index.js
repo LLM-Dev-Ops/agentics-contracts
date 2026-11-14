@@ -103,7 +103,7 @@ const IdentityCliSessionPollSchema = z.union([
     organization_id: z.string().min(1),
     role: z.literal('owner')
   }).strict().describe(
-    'A completed CLI session MUST deliver api_key only while the original authorizing membership remains active and bound to the same organization and the issued key remains active, unrevoked, unexpired, with persisted scopes that remain a non-empty unique subset of the current allowlist. Membership and key state MUST be row-locked in the same serializable delivery transaction. ' + apiKeyExpirySemantics + ' Malformed, empty, duplicate, or retired key scopes MUST fail closed before delivery or erasure. The decrypted api_key MUST hash to the referenced active key_id before delivery or erasure. API-key delivery is one-time. ' + sessionExpirySemantics
+    'A completed CLI session MUST deliver api_key only while the original authorizing membership remains active and bound to the same organization and the issued key remains active, unrevoked, unexpired, with persisted scopes that remain a non-empty unique subset of the current allowlist. Membership and key state MUST be row-locked in the same serializable delivery transaction. ' + apiKeyExpirySemantics + ' Malformed, empty, duplicate, or retired key scopes MUST fail closed before delivery or erasure. The encrypted delivery copy MUST be authenticated with associated data binding the session_code, organization_id, and key_id; swapping the ciphertext or any binding field between sessions MUST fail closed before plaintext delivery or erasure. The decrypted api_key MUST hash to the referenced active key_id before delivery or erasure. API-key delivery is one-time. ' + sessionExpirySemantics
   )
 ]);
 const SimulationEventKind = z.enum([
