@@ -84,7 +84,7 @@ const IdentityCliSessionAuthorizeSchema = z.object({
   key_name: z.string().min(1).max(255).optional(),
   scopes: IdentityScopeListSchema.optional()
 }).strict().describe(
-  "CLI session authorization MUST be performed by an active tenant membership with role owner, resolved from the verified issuer and subject; caller-supplied tenant ownership is forbidden. The provider MUST revalidate the row-locked session's persisted requested scopes as a non-empty unique subset of the current allowlist before API-key creation; malformed, duplicate, empty, unsupported, or retired persisted scopes MUST fail closed. " + sessionExpirySemantics
+  "CLI session authorization MUST be performed by an active tenant membership with role owner, resolved from the verified issuer and subject; caller-supplied tenant ownership is forbidden. The verified issuer and subject MUST resolve to exactly one active tenant membership before CLI session access; zero or multiple active memberships MUST fail closed instead of selecting an arbitrary organization. The provider MUST revalidate the row-locked session's persisted requested scopes as a non-empty unique subset of the current allowlist before API-key creation; malformed, duplicate, empty, unsupported, or retired persisted scopes MUST fail closed. " + sessionExpirySemantics
 );
 const IdentityCliSessionAuthorizedSchema = z.object({
   success: z.literal(true),
