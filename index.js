@@ -89,7 +89,7 @@ const IdentityCliSessionAuthorizedSchema = z.object({
   organization_id: z.string().min(1),
   key_id: z.string().uuid()
 }).strict().describe(
-  'When replaying a completed CLI session, the provider MUST require the same verified issuer and subject that originally authorized the session, then return key_id only after row-locking an active, unrevoked, unexpired API key owned by the same authenticated organization; missing or mismatched authorizing identity, cross-tenant, revoked, or expired key references MUST fail closed. ' + apiKeyExpirySemantics
+  'When replaying a completed CLI session, the provider MUST require the same verified issuer and subject that originally authorized the session, then return key_id only after row-locking an active, unrevoked, unexpired API key owned by the same authenticated organization whose persisted scopes remain a non-empty unique subset of the current allowlist; missing or mismatched authorizing identity, cross-tenant, malformed, empty, duplicate, retired-scope, revoked, or expired key references MUST fail closed. ' + apiKeyExpirySemantics
 );
 const IdentityCliSessionPollSchema = z.union([
   z.object({ status: z.enum(['pending','authorized']) }).strict(),
@@ -101,7 +101,7 @@ const IdentityCliSessionPollSchema = z.union([
     organization_id: z.string().min(1),
     role: z.literal('owner')
   }).strict().describe(
-    'A completed CLI session MUST deliver api_key only while the original authorizing membership remains active and bound to the same organization and the issued key remains active, unrevoked, and unexpired. Membership and key state MUST be row-locked in the same serializable delivery transaction. ' + apiKeyExpirySemantics + ' The decrypted api_key MUST hash to the referenced active key_id before delivery or erasure. API-key delivery is one-time. ' + sessionExpirySemantics
+    'A completed CLI session MUST deliver api_key only while the original authorizing membership remains active and bound to the same organization and the issued key remains active, unrevoked, unexpired, with persisted scopes that remain a non-empty unique subset of the current allowlist. Membership and key state MUST be row-locked in the same serializable delivery transaction. ' + apiKeyExpirySemantics + ' Malformed, empty, duplicate, or retired key scopes MUST fail closed before delivery or erasure. The decrypted api_key MUST hash to the referenced active key_id before delivery or erasure. API-key delivery is one-time. ' + sessionExpirySemantics
   )
 ]);
 const SimulationEventKind = z.enum([
