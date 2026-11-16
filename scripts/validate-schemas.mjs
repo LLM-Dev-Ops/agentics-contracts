@@ -233,14 +233,15 @@ if (contracts.IdentityCliSessionCreateSchema.description !== identityScopeConfig
 }
 const sessionCreateAtomicitySemantics = 'CLI session creation MUST insert the provisional session and validate the complete create response inside one serializable transaction before COMMIT. Response construction or validation failure MUST roll back the provisional session so an error cannot leave a durable orphaned session.';
 const sessionCreateFreshExpirySemantics = 'After provisional insertion has acquired storage constraints, the provider MUST refresh expires_at from a non-transaction-start persistence wall clock, construct and validate the response from that refreshed expiry, and recheck that the session remains unexpired immediately before COMMIT. A session that expires during creation MUST roll back instead of returning an already-expired session with a fresh lifetime claim.';
+const sessionVerificationUrlConfigurationSemantics = 'The configured CLI verification URL MUST be an exact canonically serialized HTTPS URL without surrounding whitespace, username, password, query, or fragment. Parsing and serializing MUST reproduce the exact configured string. Providers MUST validate one exact snapshot at startup and request time before persistence access or provisional session insertion and MUST use that snapshot to construct verification_url by adding only the generated session code. Malformed, non-canonical, explicit-default-port, dot-segment, credential-bearing, query-bearing, fragment-bearing, or non-string configuration MUST fail closed as identity_configuration_error.';
 const createdAuthority = schemas.find(({ schema }) =>
   schema.$id === 'https://agentics.org/contracts/data-plane/v1/identity-cli-session-created.schema.json'
 )?.schema;
-if (createdAuthority?.description !== sessionCreateAtomicitySemantics + ' ' + sessionCreateFreshExpirySemantics) {
-  throw new Error('identity-cli-session-created lacks atomic fresh-expiry semantics');
+if (createdAuthority?.description !== sessionCreateAtomicitySemantics + ' ' + sessionCreateFreshExpirySemantics + ' ' + sessionVerificationUrlConfigurationSemantics) {
+  throw new Error('identity-cli-session-created lacks atomic fresh-expiry and canonical verification URL semantics');
 }
-if (contracts.IdentityCliSessionCreatedSchema.description !== sessionCreateAtomicitySemantics + ' ' + sessionCreateFreshExpirySemantics) {
-  throw new Error('identity-cli-session-created runtime validator drifted from atomic fresh-expiry semantics');
+if (contracts.IdentityCliSessionCreatedSchema.description !== sessionCreateAtomicitySemantics + ' ' + sessionCreateFreshExpirySemantics + ' ' + sessionVerificationUrlConfigurationSemantics) {
+  throw new Error('identity-cli-session-created runtime validator drifted from atomic fresh-expiry and canonical verification URL semantics');
 }
 const duplicateScopeAuthorization = {
   session_code: 'ABCD1234', scopes: ['simulation:run', 'simulation:run'],
