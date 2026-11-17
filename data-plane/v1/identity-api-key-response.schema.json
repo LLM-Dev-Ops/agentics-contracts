@@ -12,7 +12,7 @@
     "name": { "type": "string", "minLength": 1 },
     "scopes": {
       "type": "array",
-      "items": { "type": "string", "minLength": 1 },
+      "items": { "type": "string", "minLength": 1, "description": "Every configured, requested, and persisted identity scope MUST be a non-empty Unicode-scalar string already in exact NFC normalization. Canonically equivalent alternate spellings MUST fail closed before identity verification, entitlement evaluation, API-key creation, response emission, or persistence access; providers MUST NOT normalize caller, configuration, or persisted scope values.", "x-unicode-normalization": "NFC", "pattern": "^(?:[^\\uD800-\\uDFFF]|[\\uD800-\\uDBFF][\\uDC00-\\uDFFF])*$" },
       "minItems": 1,
       "uniqueItems": true,
       "description": "An active API key response MUST contain a non-empty unique scope list that remains a subset of the provider's current allowlist; empty, malformed, duplicate, or retired scopes MUST fail closed and MUST NOT resolve as an active key."

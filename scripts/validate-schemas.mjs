@@ -89,6 +89,7 @@ const duplicateScopeResponse = {
 requireInvalid('identity-api-key-response', duplicateScopeResponse);
 requireRuntimeInvalid(contracts.IdentityApiKeyResponseSchema, duplicateScopeResponse, 'identity-api-key-response');
 const activeApiKeyScopeSemantics = "An active API key response MUST contain a non-empty unique scope list that remains a subset of the provider's current allowlist; empty, malformed, duplicate, or retired scopes MUST fail closed and MUST NOT resolve as an active key.";
+const canonicalIdentityScopeSemantics = 'Every configured, requested, and persisted identity scope MUST be a non-empty Unicode-scalar string already in exact NFC normalization. Canonically equivalent alternate spellings MUST fail closed before identity verification, entitlement evaluation, API-key creation, response emission, or persistence access; providers MUST NOT normalize caller, configuration, or persisted scope values.';
 const activeLookupTransactionSemantics = 'API-key and entitlement lookup MUST row-lock the matching key in a serializable transaction before evaluating active, revocation, expiry, or current-scope state. Expiry MUST be evaluated with a non-transaction-start persistence wall clock after the lock and rechecked after response validation immediately before COMMIT; unknown, inactive, concurrently revoked, expired, or invalid-scope keys MUST fail closed without disclosure. Entitlement lookup MUST also row-lock the resolved organization entitlement before response validation.';
 const apiKeyResponseSchema = schemas.find(({ file }) => file.endsWith('identity-api-key-response.schema.json'))?.schema;
 if (apiKeyResponseSchema?.properties?.scopes?.description !== activeApiKeyScopeSemantics) {
@@ -96,6 +97,20 @@ if (apiKeyResponseSchema?.properties?.scopes?.description !== activeApiKeyScopeS
 }
 if (contracts.IdentityApiKeyResponseSchema.shape.scopes.description !== activeApiKeyScopeSemantics) {
   throw new Error('identity-api-key-response runtime validator drifted from active allowlist scope semantics');
+}
+if (apiKeyResponseSchema?.properties?.scopes?.items?.description !== canonicalIdentityScopeSemantics ||
+    apiKeyResponseSchema?.properties?.scopes?.items?.['x-unicode-normalization'] !== 'NFC' ||
+    contracts.IdentityApiKeyResponseSchema.shape.scopes.element.description !== canonicalIdentityScopeSemantics) {
+  throw new Error('identity-api-key-response lacks canonical identity-scope semantics');
+}
+for (const scope of ['simulation:e\u0301xecute', 'simulation:A\u030Angstrom']) {
+  const nonNfcScopeResponse = { ...duplicateScopeResponse, scopes: [scope] };
+  requireInvalid('identity-api-key-response', nonNfcScopeResponse);
+  requireRuntimeInvalid(
+    contracts.IdentityApiKeyResponseSchema,
+    nonNfcScopeResponse,
+    'identity-api-key-response non-NFC scope',
+  );
 }
 if (apiKeyResponseSchema?.description !== activeLookupTransactionSemantics ||
     contracts.IdentityApiKeyResponseSchema.description !== activeLookupTransactionSemantics) {
@@ -229,6 +244,15 @@ requireRuntimeInvalid(
   emptyScopeCreate,
   'identity-cli-session-create empty scopes',
 );
+for (const scope of ['simulation:e\u0301xecute', 'simulation:A\u030Angstrom']) {
+  const nonNfcScopeCreate = { scopes: [scope] };
+  requireInvalid('identity-cli-session-create', nonNfcScopeCreate);
+  requireRuntimeInvalid(
+    contracts.IdentityCliSessionCreateSchema,
+    nonNfcScopeCreate,
+    'identity-cli-session-create non-NFC scope',
+  );
+}
 for (const field of ['cli_name', 'cli_version', 'hostname']) {
   const malformedMetadata = { [field]: '\uD800' };
   requireInvalid('identity-cli-session-create', malformedMetadata);
@@ -319,7 +343,7 @@ for (const field of ['cli_name', 'cli_version', 'hostname']) {
     );
   }
 }
-const identityScopeConfigurationSemantics = 'Provider identity scope configuration MUST define non-empty allowed and default scope lists containing non-empty strings without surrounding whitespace, unique within each list, with every default scope present in the allowed list. Malformed, duplicate, empty, whitespace-padded, or unsupported configured scopes MUST fail closed at startup and request time instead of being normalized or deduplicated. Every configured scope MUST contain only Unicode scalar values; unpaired UTF-16 surrogate escapes MUST fail closed at startup and request time before session creation or persistence access.';
+const identityScopeConfigurationSemantics = 'Provider identity scope configuration MUST define non-empty allowed and default scope lists containing non-empty strings without surrounding whitespace, unique within each list, with every default scope present in the allowed list. Malformed, duplicate, empty, whitespace-padded, non-NFC, or unsupported configured scopes MUST fail closed at startup and request time instead of being normalized or deduplicated. Every configured scope MUST contain only Unicode scalar values and already use exact NFC normalization; unpaired UTF-16 surrogate escapes and canonically equivalent alternate spellings MUST fail closed at startup and request time before session creation or persistence access.';
 const createAuthority = schemas.find(({ schema }) =>
   schema.$id === 'https://agentics.org/contracts/data-plane/v1/identity-cli-session-create.schema.json'
 )?.schema;
@@ -328,6 +352,11 @@ if (createAuthority?.description !== identityScopeConfigurationSemantics + ' ' +
 }
 if (contracts.IdentityCliSessionCreateSchema.description !== identityScopeConfigurationSemantics + ' ' + cliMetadataUnicodeSemantics) {
   throw new Error('identity-cli-session-create runtime validator drifted from scope configuration semantics');
+}
+if (createAuthority?.properties?.scopes?.items?.description !== canonicalIdentityScopeSemantics ||
+    createAuthority?.properties?.scopes?.items?.['x-unicode-normalization'] !== 'NFC' ||
+    contracts.IdentityCliSessionCreateSchema.shape.scopes.unwrap().element.description !== canonicalIdentityScopeSemantics) {
+  throw new Error('identity-cli-session-create lacks canonical identity-scope semantics');
 }
 for (const field of ['cli_name', 'cli_version', 'hostname']) {
   if (createAuthority?.properties?.[field]?.description !== canonicalCliMetadataSemantics ||
@@ -364,6 +393,20 @@ requireRuntimeInvalid(
   emptyScopeAuthorization,
   'identity-cli-session-authorize empty scopes',
 );
+for (const scope of ['simulation:e\u0301xecute', 'simulation:A\u030Angstrom']) {
+  const nonNfcScopeAuthorization = { session_code: 'ABCD1234', scopes: [scope] };
+  requireInvalid('identity-cli-session-authorize', nonNfcScopeAuthorization);
+  requireRuntimeInvalid(
+    contracts.IdentityCliSessionAuthorizeSchema,
+    nonNfcScopeAuthorization,
+    'identity-cli-session-authorize non-NFC scope',
+  );
+}
+if (authorizeAuthority?.properties?.scopes?.items?.description !== canonicalIdentityScopeSemantics ||
+    authorizeAuthority?.properties?.scopes?.items?.['x-unicode-normalization'] !== 'NFC' ||
+    contracts.IdentityCliSessionAuthorizeSchema.shape.scopes.unwrap().element.description !== canonicalIdentityScopeSemantics) {
+  throw new Error('identity-cli-session-authorize lacks canonical identity-scope semantics');
+}
 const malformedKeyNameAuthorization = { session_code: 'ABCD1234', key_name: '\uD800' };
 requireInvalid('identity-cli-session-authorize', malformedKeyNameAuthorization);
 requireRuntimeInvalid(

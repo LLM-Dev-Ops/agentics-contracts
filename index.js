@@ -55,7 +55,12 @@ const DataPlanePrincipalSchema = z.object({
 const IdentityApiKeyLookupSchema = z.object({
   key_hash: z.string().regex(/^[a-f0-9]{64}$/)
 }).strict();
-const IdentityScopeListSchema = z.array(z.string().min(1)).min(1).refine(
+const canonicalIdentityScopeSemantics = 'Every configured, requested, and persisted identity scope MUST be a non-empty Unicode-scalar string already in exact NFC normalization. Canonically equivalent alternate spellings MUST fail closed before identity verification, entitlement evaluation, API-key creation, response emission, or persistence access; providers MUST NOT normalize caller, configuration, or persisted scope values.';
+const IdentityScopeSchema = z.string().min(1).refine(isWellFormedUnicode).refine(
+  (scope) => scope.normalize('NFC') === scope,
+  { message: 'Scopes must use exact NFC normalization' }
+).describe(canonicalIdentityScopeSemantics);
+const IdentityScopeListSchema = z.array(IdentityScopeSchema).min(1).refine(
   (scopes) => new Set(scopes).size === scopes.length,
   { message: 'Scopes must be unique' }
 );
@@ -80,7 +85,7 @@ const IdentityEntitlementResponseSchema = z.object({
   max_tokens: z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER).describe(losslessEntitlementSemantics),
   max_api_keys: z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER).describe(apiKeyLimitSemantics)
 }).strict().describe(entitlementActiveKeySemantics + ' ' + activeLookupTransactionSemantics);
-const identityScopeConfigurationSemantics = 'Provider identity scope configuration MUST define non-empty allowed and default scope lists containing non-empty strings without surrounding whitespace, unique within each list, with every default scope present in the allowed list. Malformed, duplicate, empty, whitespace-padded, or unsupported configured scopes MUST fail closed at startup and request time instead of being normalized or deduplicated. Every configured scope MUST contain only Unicode scalar values; unpaired UTF-16 surrogate escapes MUST fail closed at startup and request time before session creation or persistence access.';
+const identityScopeConfigurationSemantics = 'Provider identity scope configuration MUST define non-empty allowed and default scope lists containing non-empty strings without surrounding whitespace, unique within each list, with every default scope present in the allowed list. Malformed, duplicate, empty, whitespace-padded, non-NFC, or unsupported configured scopes MUST fail closed at startup and request time instead of being normalized or deduplicated. Every configured scope MUST contain only Unicode scalar values and already use exact NFC normalization; unpaired UTF-16 surrogate escapes and canonically equivalent alternate spellings MUST fail closed at startup and request time before session creation or persistence access.';
 const cliMetadataUnicodeSemantics = 'CLI session metadata fields cli_name, cli_version, hostname, and key_name MUST contain only Unicode scalar values. Unpaired UTF-16 surrogate escapes MUST fail closed before identity verification, provisional session insertion, API-key insertion, session mutation, or persistence access; providers MUST NOT rely on lossy UTF-8 replacement during persistence or replay comparison.';
 const canonicalCliMetadataSemantics = 'CLI metadata values MUST be non-empty NFC-normalized strings without surrounding whitespace, Unicode C0/C1 control characters, Unicode line or paragraph separators, Unicode format controls, Unicode noncharacter code points, or Unicode private-use code points. Empty, non-NFC, whitespace-only, whitespace-padded, control-bearing, separator-bearing, format-control-bearing, noncharacter-bearing, or private-use-bearing values MUST fail closed before identity verification, provisional session insertion, API-key insertion, session mutation, or persistence access; providers MUST NOT normalize, trim, or sanitize caller input.';
 const canonicalCliMetadata = (value) =>
