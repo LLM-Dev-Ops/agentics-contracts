@@ -82,12 +82,13 @@ const IdentityEntitlementResponseSchema = z.object({
 }).strict().describe(entitlementActiveKeySemantics + ' ' + activeLookupTransactionSemantics);
 const identityScopeConfigurationSemantics = 'Provider identity scope configuration MUST define non-empty allowed and default scope lists containing non-empty strings without surrounding whitespace, unique within each list, with every default scope present in the allowed list. Malformed, duplicate, empty, whitespace-padded, or unsupported configured scopes MUST fail closed at startup and request time instead of being normalized or deduplicated. Every configured scope MUST contain only Unicode scalar values; unpaired UTF-16 surrogate escapes MUST fail closed at startup and request time before session creation or persistence access.';
 const cliMetadataUnicodeSemantics = 'CLI session metadata fields cli_name, cli_version, hostname, and key_name MUST contain only Unicode scalar values. Unpaired UTF-16 surrogate escapes MUST fail closed before identity verification, provisional session insertion, API-key insertion, session mutation, or persistence access; providers MUST NOT rely on lossy UTF-8 replacement during persistence or replay comparison.';
-const canonicalCliMetadataSemantics = 'CLI metadata values MUST be non-empty strings without surrounding whitespace, Unicode C0/C1 control characters, Unicode format controls, or Unicode noncharacter code points. Empty, whitespace-only, whitespace-padded, control-bearing, format-control-bearing, or noncharacter-bearing values MUST fail closed before identity verification, provisional session insertion, API-key insertion, session mutation, or persistence access; providers MUST NOT trim or sanitize caller input.';
+const canonicalCliMetadataSemantics = 'CLI metadata values MUST be non-empty strings without surrounding whitespace, Unicode C0/C1 control characters, Unicode format controls, Unicode noncharacter code points, or Unicode private-use code points. Empty, whitespace-only, whitespace-padded, control-bearing, format-control-bearing, noncharacter-bearing, or private-use-bearing values MUST fail closed before identity verification, provisional session insertion, API-key insertion, session mutation, or persistence access; providers MUST NOT trim or sanitize caller input.';
 const canonicalCliMetadata = (value) =>
   value.trim() === value &&
   !/[\u0000-\u001F\u007F-\u009F]/u.test(value) &&
   !/\p{Cf}/u.test(value) &&
   !/\p{Noncharacter_Code_Point}/u.test(value) &&
+  !/\p{Co}/u.test(value) &&
   !/[\u061C\u200E\u200F\u202A-\u202E\u2066-\u2069]/u.test(value) &&
   isWellFormedUnicode(value);
 const IdentityCliSessionCreateSchema = z.object({
