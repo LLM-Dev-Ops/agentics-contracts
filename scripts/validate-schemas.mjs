@@ -89,7 +89,7 @@ const duplicateScopeResponse = {
 requireInvalid('identity-api-key-response', duplicateScopeResponse);
 requireRuntimeInvalid(contracts.IdentityApiKeyResponseSchema, duplicateScopeResponse, 'identity-api-key-response');
 const activeApiKeyScopeSemantics = "An active API key response MUST contain a non-empty unique scope list that remains a subset of the provider's current allowlist; empty, malformed, duplicate, or retired scopes MUST fail closed and MUST NOT resolve as an active key.";
-const canonicalIdentityScopeSemantics = 'Every configured, requested, and persisted identity scope MUST be a non-empty Unicode-scalar string already in exact NFC normalization and MUST NOT contain Unicode C0/C1 control characters, Unicode line or paragraph separators, Unicode General Category Cf format controls, Unicode noncharacter code points, or Unicode private-use code points. Canonically equivalent alternate spellings, control-bearing values, separator-bearing values, format-control-bearing values, noncharacter-bearing values, and private-use-bearing values MUST fail closed before identity verification, entitlement evaluation, API-key creation, response emission, or persistence access; providers MUST NOT normalize, trim, or sanitize caller, configuration, or persisted scope values.';
+const canonicalIdentityScopeSemantics = 'Every configured, requested, and persisted identity scope MUST be a non-empty Unicode-scalar string already in exact NFC normalization and MUST NOT contain Unicode White_Space property characters, Unicode C0/C1 control characters, Unicode General Category Cf format controls, Unicode noncharacter code points, or Unicode private-use code points. Canonically equivalent alternate spellings, whitespace-bearing values, control-bearing values, format-control-bearing values, noncharacter-bearing values, and private-use-bearing values MUST fail closed before identity verification, entitlement evaluation, API-key creation, response emission, or persistence access; providers MUST NOT normalize, trim, or sanitize caller, configuration, or persisted scope values.';
 const activeLookupTransactionSemantics = 'API-key and entitlement lookup MUST row-lock the matching key in a serializable transaction before evaluating active, revocation, expiry, or current-scope state. Expiry MUST be evaluated with a non-transaction-start persistence wall clock after the lock and rechecked after response validation immediately before COMMIT; unknown, inactive, concurrently revoked, expired, or invalid-scope keys MUST fail closed without disclosure. Entitlement lookup MUST also row-lock the resolved organization entitlement before response validation.';
 const apiKeyResponseSchema = schemas.find(({ file }) => file.endsWith('identity-api-key-response.schema.json'))?.schema;
 if (apiKeyResponseSchema?.properties?.scopes?.description !== activeApiKeyScopeSemantics) {
@@ -121,13 +121,13 @@ for (const scope of ['simulation:\u0000run', 'simulation:\u0085run']) {
     'identity-api-key-response control-bearing scope',
   );
 }
-for (const scope of ['simulation:\u2028run', 'simulation:\u2029run']) {
-  const separatorBearingScopeResponse = { ...duplicateScopeResponse, scopes: [scope] };
-  requireInvalid('identity-api-key-response', separatorBearingScopeResponse);
+for (const scope of ['simulation:\u00A0run', 'simulation:\u2003run', 'simulation:\u2028run', 'simulation:\u2029run']) {
+  const whitespaceBearingScopeResponse = { ...duplicateScopeResponse, scopes: [scope] };
+  requireInvalid('identity-api-key-response', whitespaceBearingScopeResponse);
   requireRuntimeInvalid(
     contracts.IdentityApiKeyResponseSchema,
-    separatorBearingScopeResponse,
-    'identity-api-key-response separator-bearing scope',
+    whitespaceBearingScopeResponse,
+    'identity-api-key-response whitespace-bearing scope',
   );
 }
 for (const scope of ['simulation:\u200Brun', 'simulation:\u2060run']) {
@@ -307,13 +307,13 @@ for (const scope of ['simulation:\u0000run', 'simulation:\u0085run']) {
     'identity-cli-session-create control-bearing scope',
   );
 }
-for (const scope of ['simulation:\u2028run', 'simulation:\u2029run']) {
-  const separatorBearingScopeCreate = { scopes: [scope] };
-  requireInvalid('identity-cli-session-create', separatorBearingScopeCreate);
+for (const scope of ['simulation:\u00A0run', 'simulation:\u2003run', 'simulation:\u2028run', 'simulation:\u2029run']) {
+  const whitespaceBearingScopeCreate = { scopes: [scope] };
+  requireInvalid('identity-cli-session-create', whitespaceBearingScopeCreate);
   requireRuntimeInvalid(
     contracts.IdentityCliSessionCreateSchema,
-    separatorBearingScopeCreate,
-    'identity-cli-session-create separator-bearing scope',
+    whitespaceBearingScopeCreate,
+    'identity-cli-session-create whitespace-bearing scope',
   );
 }
 for (const scope of ['simulation:\u200Brun', 'simulation:\u2060run']) {
@@ -433,7 +433,7 @@ for (const field of ['cli_name', 'cli_version', 'hostname']) {
     );
   }
 }
-const identityScopeConfigurationSemantics = 'Provider identity scope configuration MUST define non-empty allowed and default scope lists containing non-empty strings without surrounding whitespace, Unicode C0/C1 control characters, Unicode line or paragraph separators, Unicode General Category Cf format controls, Unicode noncharacter code points, or Unicode private-use code points, unique within each list, with every default scope present in the allowed list. Malformed, duplicate, empty, whitespace-padded, control-bearing, separator-bearing, format-control-bearing, noncharacter-bearing, private-use-bearing, non-NFC, or unsupported configured scopes MUST fail closed at startup and request time instead of being normalized, trimmed, sanitized, or deduplicated. Every configured scope MUST contain only Unicode scalar values and already use exact NFC normalization; unpaired UTF-16 surrogate escapes, canonically equivalent alternate spellings, control-bearing values, separator-bearing values, format-control-bearing values, noncharacter-bearing values, and private-use-bearing values MUST fail closed at startup and request time before session creation or persistence access.';
+const identityScopeConfigurationSemantics = 'Provider identity scope configuration MUST define non-empty allowed and default scope lists containing non-empty strings without Unicode White_Space property characters, Unicode C0/C1 control characters, Unicode General Category Cf format controls, Unicode noncharacter code points, or Unicode private-use code points, unique within each list, with every default scope present in the allowed list. Malformed, duplicate, empty, whitespace-bearing, control-bearing, format-control-bearing, noncharacter-bearing, private-use-bearing, non-NFC, or unsupported configured scopes MUST fail closed at startup and request time instead of being normalized, trimmed, sanitized, or deduplicated. Every configured scope MUST contain only Unicode scalar values and already use exact NFC normalization; unpaired UTF-16 surrogate escapes, canonically equivalent alternate spellings, whitespace-bearing values, control-bearing values, format-control-bearing values, noncharacter-bearing values, and private-use-bearing values MUST fail closed at startup and request time before session creation or persistence access.';
 const createAuthority = schemas.find(({ schema }) =>
   schema.$id === 'https://agentics.org/contracts/data-plane/v1/identity-cli-session-create.schema.json'
 )?.schema;
@@ -501,13 +501,13 @@ for (const scope of ['simulation:\u0000run', 'simulation:\u0085run']) {
     'identity-cli-session-authorize control-bearing scope',
   );
 }
-for (const scope of ['simulation:\u2028run', 'simulation:\u2029run']) {
-  const separatorBearingScopeAuthorization = { session_code: 'ABCD1234', scopes: [scope] };
-  requireInvalid('identity-cli-session-authorize', separatorBearingScopeAuthorization);
+for (const scope of ['simulation:\u00A0run', 'simulation:\u2003run', 'simulation:\u2028run', 'simulation:\u2029run']) {
+  const whitespaceBearingScopeAuthorization = { session_code: 'ABCD1234', scopes: [scope] };
+  requireInvalid('identity-cli-session-authorize', whitespaceBearingScopeAuthorization);
   requireRuntimeInvalid(
     contracts.IdentityCliSessionAuthorizeSchema,
-    separatorBearingScopeAuthorization,
-    'identity-cli-session-authorize separator-bearing scope',
+    whitespaceBearingScopeAuthorization,
+    'identity-cli-session-authorize whitespace-bearing scope',
   );
 }
 for (const scope of ['simulation:\u200Brun', 'simulation:\u2060run']) {
