@@ -89,7 +89,7 @@ const duplicateScopeResponse = {
 requireInvalid('identity-api-key-response', duplicateScopeResponse);
 requireRuntimeInvalid(contracts.IdentityApiKeyResponseSchema, duplicateScopeResponse, 'identity-api-key-response');
 const activeApiKeyScopeSemantics = "An active API key response MUST contain a non-empty unique scope list that remains a subset of the provider's current allowlist; empty, malformed, duplicate, or retired scopes MUST fail closed and MUST NOT resolve as an active key.";
-const canonicalIdentityScopeSemantics = 'Every configured, requested, and persisted identity scope MUST be a non-empty Unicode-scalar string already in exact NFC normalization. Canonically equivalent alternate spellings MUST fail closed before identity verification, entitlement evaluation, API-key creation, response emission, or persistence access; providers MUST NOT normalize caller, configuration, or persisted scope values.';
+const canonicalIdentityScopeSemantics = 'Every configured, requested, and persisted identity scope MUST be a non-empty Unicode-scalar string already in exact NFC normalization and MUST NOT contain Unicode C0 or C1 control characters. Canonically equivalent alternate spellings and control-bearing values MUST fail closed before identity verification, entitlement evaluation, API-key creation, response emission, or persistence access; providers MUST NOT normalize, trim, or sanitize caller, configuration, or persisted scope values.';
 const activeLookupTransactionSemantics = 'API-key and entitlement lookup MUST row-lock the matching key in a serializable transaction before evaluating active, revocation, expiry, or current-scope state. Expiry MUST be evaluated with a non-transaction-start persistence wall clock after the lock and rechecked after response validation immediately before COMMIT; unknown, inactive, concurrently revoked, expired, or invalid-scope keys MUST fail closed without disclosure. Entitlement lookup MUST also row-lock the resolved organization entitlement before response validation.';
 const apiKeyResponseSchema = schemas.find(({ file }) => file.endsWith('identity-api-key-response.schema.json'))?.schema;
 if (apiKeyResponseSchema?.properties?.scopes?.description !== activeApiKeyScopeSemantics) {
@@ -110,6 +110,15 @@ for (const scope of ['simulation:e\u0301xecute', 'simulation:A\u030Angstrom']) {
     contracts.IdentityApiKeyResponseSchema,
     nonNfcScopeResponse,
     'identity-api-key-response non-NFC scope',
+  );
+}
+for (const scope of ['simulation:\u0000run', 'simulation:\u0085run']) {
+  const controlBearingScopeResponse = { ...duplicateScopeResponse, scopes: [scope] };
+  requireInvalid('identity-api-key-response', controlBearingScopeResponse);
+  requireRuntimeInvalid(
+    contracts.IdentityApiKeyResponseSchema,
+    controlBearingScopeResponse,
+    'identity-api-key-response control-bearing scope',
   );
 }
 if (apiKeyResponseSchema?.description !== activeLookupTransactionSemantics ||
@@ -253,6 +262,15 @@ for (const scope of ['simulation:e\u0301xecute', 'simulation:A\u030Angstrom']) {
     'identity-cli-session-create non-NFC scope',
   );
 }
+for (const scope of ['simulation:\u0000run', 'simulation:\u0085run']) {
+  const controlBearingScopeCreate = { scopes: [scope] };
+  requireInvalid('identity-cli-session-create', controlBearingScopeCreate);
+  requireRuntimeInvalid(
+    contracts.IdentityCliSessionCreateSchema,
+    controlBearingScopeCreate,
+    'identity-cli-session-create control-bearing scope',
+  );
+}
 for (const field of ['cli_name', 'cli_version', 'hostname']) {
   const malformedMetadata = { [field]: '\uD800' };
   requireInvalid('identity-cli-session-create', malformedMetadata);
@@ -343,7 +361,7 @@ for (const field of ['cli_name', 'cli_version', 'hostname']) {
     );
   }
 }
-const identityScopeConfigurationSemantics = 'Provider identity scope configuration MUST define non-empty allowed and default scope lists containing non-empty strings without surrounding whitespace, unique within each list, with every default scope present in the allowed list. Malformed, duplicate, empty, whitespace-padded, non-NFC, or unsupported configured scopes MUST fail closed at startup and request time instead of being normalized or deduplicated. Every configured scope MUST contain only Unicode scalar values and already use exact NFC normalization; unpaired UTF-16 surrogate escapes and canonically equivalent alternate spellings MUST fail closed at startup and request time before session creation or persistence access.';
+const identityScopeConfigurationSemantics = 'Provider identity scope configuration MUST define non-empty allowed and default scope lists containing non-empty strings without surrounding whitespace or Unicode C0/C1 control characters, unique within each list, with every default scope present in the allowed list. Malformed, duplicate, empty, whitespace-padded, control-bearing, non-NFC, or unsupported configured scopes MUST fail closed at startup and request time instead of being normalized, trimmed, sanitized, or deduplicated. Every configured scope MUST contain only Unicode scalar values and already use exact NFC normalization; unpaired UTF-16 surrogate escapes, canonically equivalent alternate spellings, and control-bearing values MUST fail closed at startup and request time before session creation or persistence access.';
 const createAuthority = schemas.find(({ schema }) =>
   schema.$id === 'https://agentics.org/contracts/data-plane/v1/identity-cli-session-create.schema.json'
 )?.schema;
@@ -400,6 +418,15 @@ for (const scope of ['simulation:e\u0301xecute', 'simulation:A\u030Angstrom']) {
     contracts.IdentityCliSessionAuthorizeSchema,
     nonNfcScopeAuthorization,
     'identity-cli-session-authorize non-NFC scope',
+  );
+}
+for (const scope of ['simulation:\u0000run', 'simulation:\u0085run']) {
+  const controlBearingScopeAuthorization = { session_code: 'ABCD1234', scopes: [scope] };
+  requireInvalid('identity-cli-session-authorize', controlBearingScopeAuthorization);
+  requireRuntimeInvalid(
+    contracts.IdentityCliSessionAuthorizeSchema,
+    controlBearingScopeAuthorization,
+    'identity-cli-session-authorize control-bearing scope',
   );
 }
 if (authorizeAuthority?.properties?.scopes?.items?.description !== canonicalIdentityScopeSemantics ||
