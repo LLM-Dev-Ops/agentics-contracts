@@ -29,6 +29,12 @@ async function schemasUnder(directory) {
 // schemas predate Ajv's strictRequired rules, but formats are now validated.
 const ajv = new Ajv({ allErrors: true, strict: false });
 addFormats(ajv);
+ajv.addKeyword({
+  keyword: 'x-unicode-normalization',
+  schemaType: 'string',
+  type: 'string',
+  validate: (form, value) => form === 'NFC' && value.normalize('NFC') === value,
+});
 const files = (await Promise.all(roots.map(schemasUnder))).flat().sort();
 const schemas = await Promise.all(files.map(async (file) => ({
   file,
@@ -186,7 +192,7 @@ const endUserJwtConfigurationSemantics = 'The configured end-user JWT issuer and
 const endUserJwtEmailSemantics = 'The optional email claim, when present, MUST be a valid non-empty email string without surrounding whitespace and MUST be normalized to lowercase only after validation. A malformed, empty, whitespace-padded, or non-string email claim MUST fail closed before membership or persistence access instead of being treated as absent.';
 const endUserJwtLifetimeSemantics = endUserJwtProtectedHeaderSemantics + ' ' + endUserJwtConfigurationSemantics + ' CLI authorization MUST accept exactly one Authorization credential containing a non-empty Bearer JWT without surrounding token whitespace; missing, duplicate, empty, or whitespace-padded credentials MUST fail closed before identity verification, membership access, or persistence access. Providers MUST determine Authorization multiplicity from the raw wire-level header occurrences; normalized header maps that collapse duplicates are insufficient. The end-user JWT used for CLI authorization MUST be signature-verified and contain the configured issuer and audience, a non-empty string subject without surrounding whitespace, and a valid numeric expiration claim. Missing, malformed, empty, whitespace-padded, or non-string subject claims and missing, malformed, or expired expiration MUST fail closed before membership or persistence access; a correctly signed token without exp is not an authorized identity. The aud claim MUST be either the configured non-empty audience string or a non-empty array of unique non-empty strings without surrounding whitespace containing the configured audience exactly once. Every audience entry and any present azp MUST contain only Unicode scalar values; malformed, empty, whitespace-only, whitespace-padded, duplicate, or unpaired-surrogate audience values MUST fail closed before membership or persistence access. When aud contains multiple values, azp MUST be present and exactly match the configured audience; whenever azp is present it MUST match that audience. Missing or mismatched authorized-party binding MUST fail closed before membership or persistence access. ' + endUserJwtEmailSemantics;
 const cliMetadataUnicodeSemantics = 'CLI session metadata fields cli_name, cli_version, hostname, and key_name MUST contain only Unicode scalar values. Unpaired UTF-16 surrogate escapes MUST fail closed before identity verification, provisional session insertion, API-key insertion, session mutation, or persistence access; providers MUST NOT rely on lossy UTF-8 replacement during persistence or replay comparison.';
-const canonicalCliMetadataSemantics = 'CLI metadata values MUST be non-empty strings without surrounding whitespace, Unicode C0/C1 control characters, Unicode format controls, Unicode noncharacter code points, or Unicode private-use code points. Empty, whitespace-only, whitespace-padded, control-bearing, format-control-bearing, noncharacter-bearing, or private-use-bearing values MUST fail closed before identity verification, provisional session insertion, API-key insertion, session mutation, or persistence access; providers MUST NOT trim or sanitize caller input.';
+const canonicalCliMetadataSemantics = 'CLI metadata values MUST be non-empty NFC-normalized strings without surrounding whitespace, Unicode C0/C1 control characters, Unicode format controls, Unicode noncharacter code points, or Unicode private-use code points. Empty, non-NFC, whitespace-only, whitespace-padded, control-bearing, format-control-bearing, noncharacter-bearing, or private-use-bearing values MUST fail closed before identity verification, provisional session insertion, API-key insertion, session mutation, or persistence access; providers MUST NOT normalize, trim, or sanitize caller input.';
 const ownerAuthorizationSemantics = endUserJwtLifetimeSemantics + ' ' + cliMetadataUnicodeSemantics + " CLI session authorization MUST be performed by an active tenant membership with role owner, resolved from the verified issuer and subject; caller-supplied tenant ownership is forbidden. The verified issuer and subject MUST resolve to exactly one active tenant membership before CLI session access; zero or multiple active memberships MUST fail closed instead of selecting an arbitrary organization. The provider MUST revalidate the row-locked session's persisted requested scopes as a non-empty unique subset of the current allowlist before API-key creation; malformed, duplicate, empty, unsupported, or retired persisted scopes MUST fail closed. " + authorizationReplayRequestSemantics + ' ' + sessionExpirySemantics + ' ' + authorizationPrecommitSemantics + ' ' + finalSessionExpirySemantics + ' ' + postWriteSessionExpirySemantics + ' ' + sessionEncryptionConfigurationSemantics;
 const authorizeAuthority = schemas.find(({ schema }) =>
   schema.$id === 'https://agentics.org/contracts/data-plane/v1/identity-cli-session-authorize.schema.json'
@@ -285,6 +291,15 @@ for (const field of ['cli_name', 'cli_version', 'hostname']) {
       `identity-cli-session-create private-use-bearing ${field}`,
     );
   }
+  for (const value of [`decomposed-e\u0301-${field}`, `decomposed-A\u030A-${field}`]) {
+    const nonNfcMetadata = { [field]: value };
+    requireInvalid('identity-cli-session-create', nonNfcMetadata);
+    requireRuntimeInvalid(
+      contracts.IdentityCliSessionCreateSchema,
+      nonNfcMetadata,
+      `identity-cli-session-create non-NFC ${field}`,
+    );
+  }
   for (const value of [`bidi\u202E${field}`, `bidi\u2066${field}`]) {
     const bidirectionalControlMetadata = { [field]: value };
     requireInvalid('identity-cli-session-create', bidirectionalControlMetadata);
@@ -307,6 +322,7 @@ if (contracts.IdentityCliSessionCreateSchema.description !== identityScopeConfig
 }
 for (const field of ['cli_name', 'cli_version', 'hostname']) {
   if (createAuthority?.properties?.[field]?.description !== canonicalCliMetadataSemantics ||
+      createAuthority?.properties?.[field]?.['x-unicode-normalization'] !== 'NFC' ||
       contracts.IdentityCliSessionCreateSchema.shape[field].unwrap().description !== canonicalCliMetadataSemantics) {
     throw new Error(`identity-cli-session-create lacks canonical ${field} semantics`);
   }
@@ -347,6 +363,7 @@ requireRuntimeInvalid(
   'identity-cli-session-authorize malformed key_name',
 );
 if (authorizeAuthority?.properties?.key_name?.description !== canonicalCliMetadataSemantics ||
+    authorizeAuthority?.properties?.key_name?.['x-unicode-normalization'] !== 'NFC' ||
     contracts.IdentityCliSessionAuthorizeSchema.shape.key_name.unwrap().description !== canonicalCliMetadataSemantics) {
   throw new Error('identity-cli-session-authorize lacks canonical key_name semantics');
 }
@@ -402,6 +419,15 @@ for (const key_name of ['CLI\uE000Key', 'CLI\uF8FFKey']) {
     contracts.IdentityCliSessionAuthorizeSchema,
     privateUseBearingKeyNameAuthorization,
     'identity-cli-session-authorize private-use-bearing key_name',
+  );
+}
+for (const key_name of ['CLI e\u0301 Key', 'CLI A\u030A Key']) {
+  const nonNfcKeyNameAuthorization = { session_code: 'ABCD1234', key_name };
+  requireInvalid('identity-cli-session-authorize', nonNfcKeyNameAuthorization);
+  requireRuntimeInvalid(
+    contracts.IdentityCliSessionAuthorizeSchema,
+    nonNfcKeyNameAuthorization,
+    'identity-cli-session-authorize non-NFC key_name',
   );
 }
 for (const key_name of ['CLI\u202EKey', 'CLI\u2066Key']) {
