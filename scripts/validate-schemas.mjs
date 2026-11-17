@@ -90,6 +90,7 @@ requireInvalid('identity-api-key-response', duplicateScopeResponse);
 requireRuntimeInvalid(contracts.IdentityApiKeyResponseSchema, duplicateScopeResponse, 'identity-api-key-response');
 const activeApiKeyScopeSemantics = "An active API key response MUST contain a non-empty unique scope list that remains a subset of the provider's current allowlist; empty, malformed, duplicate, or retired scopes MUST fail closed and MUST NOT resolve as an active key.";
 const canonicalIdentityScopeSemantics = 'Every configured, requested, and persisted identity scope MUST be a non-empty Unicode-scalar string already in exact NFKC normalization and MUST NOT contain Unicode White_Space property characters, Unicode C0/C1 control characters, Unicode General Category Cf format controls, Unicode noncharacter code points, Unicode private-use code points, Unicode variation selectors, Unicode default-ignorable code points, or Unicode combining marks. Canonically or compatibility-equivalent alternate spellings, whitespace-bearing values, control-bearing values, format-control-bearing values, noncharacter-bearing values, private-use-bearing values, variation-selector-bearing values, default-ignorable-bearing values, and combining-mark-bearing values MUST fail closed before identity verification, entitlement evaluation, API-key creation, response emission, or persistence access; providers MUST NOT normalize, trim, or sanitize caller, configuration, or persisted scope values.';
+const canonicalPersistedApiKeyNameSemantics = 'Every persisted API-key name returned by active-key lookup MUST remain a non-empty NFC-normalized Unicode-scalar string without surrounding whitespace, Unicode C0/C1 control characters, Unicode line or paragraph separators, Unicode format or bidirectional controls, Unicode noncharacter code points, or Unicode private-use code points. Malformed or noncanonical persisted names MUST fail closed after the key row lock and before response emission or COMMIT; providers MUST NOT normalize, trim, sanitize, or disclose them.';
 const activeLookupTransactionSemantics = 'API-key and entitlement lookup MUST row-lock the matching key in a serializable transaction before evaluating active, revocation, expiry, or current-scope state. Expiry MUST be evaluated with a non-transaction-start persistence wall clock after the lock and rechecked after response validation immediately before COMMIT; unknown, inactive, concurrently revoked, expired, or invalid-scope keys MUST fail closed without disclosure. Entitlement lookup MUST also row-lock the resolved organization entitlement before response validation.';
 const apiKeyResponseSchema = schemas.find(({ file }) => file.endsWith('identity-api-key-response.schema.json'))?.schema;
 if (apiKeyResponseSchema?.properties?.scopes?.description !== activeApiKeyScopeSemantics) {
@@ -97,6 +98,20 @@ if (apiKeyResponseSchema?.properties?.scopes?.description !== activeApiKeyScopeS
 }
 if (contracts.IdentityApiKeyResponseSchema.shape.scopes.description !== activeApiKeyScopeSemantics) {
   throw new Error('identity-api-key-response runtime validator drifted from active allowlist scope semantics');
+}
+if (apiKeyResponseSchema?.properties?.name?.description !== canonicalPersistedApiKeyNameSemantics ||
+    apiKeyResponseSchema?.properties?.name?.['x-unicode-normalization'] !== 'NFC' ||
+    contracts.IdentityApiKeyResponseSchema.shape.name.description !== canonicalPersistedApiKeyNameSemantics) {
+  throw new Error('identity-api-key-response lacks canonical persisted key-name semantics');
+}
+for (const name of ['cli\u0000admin', 'cli\uD800admin']) {
+  const malformedNameResponse = { ...duplicateScopeResponse, name, scopes: ['simulation:run'] };
+  requireInvalid('identity-api-key-response', malformedNameResponse);
+  requireRuntimeInvalid(
+    contracts.IdentityApiKeyResponseSchema,
+    malformedNameResponse,
+    'identity-api-key-response malformed persisted name',
+  );
 }
 if (apiKeyResponseSchema?.properties?.scopes?.items?.description !== canonicalIdentityScopeSemantics ||
     apiKeyResponseSchema?.properties?.scopes?.items?.['x-unicode-normalization'] !== 'NFKC' ||

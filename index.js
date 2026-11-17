@@ -88,12 +88,23 @@ const IdentityScopeListSchema = z.array(IdentityScopeSchema).min(1).refine(
   (scopes) => new Set(scopes).size === scopes.length,
   { message: 'Scopes must be unique' }
 );
+const canonicalMetadataValue = (value) =>
+  value.normalize('NFC') === value &&
+  value.trim() === value &&
+  !/[\u0000-\u001F\u007F-\u009F]/u.test(value) &&
+  !/[\u2028\u2029]/u.test(value) &&
+  !/\p{Cf}/u.test(value) &&
+  !/\p{Noncharacter_Code_Point}/u.test(value) &&
+  !/\p{Co}/u.test(value) &&
+  !/[\u061C\u200E\u200F\u202A-\u202E\u2066-\u2069]/u.test(value) &&
+  isWellFormedUnicode(value);
+const canonicalPersistedApiKeyNameSemantics = 'Every persisted API-key name returned by active-key lookup MUST remain a non-empty NFC-normalized Unicode-scalar string without surrounding whitespace, Unicode C0/C1 control characters, Unicode line or paragraph separators, Unicode format or bidirectional controls, Unicode noncharacter code points, or Unicode private-use code points. Malformed or noncanonical persisted names MUST fail closed after the key row lock and before response emission or COMMIT; providers MUST NOT normalize, trim, sanitize, or disclose them.';
 const activeApiKeyScopeSemantics = "An active API key response MUST contain a non-empty unique scope list that remains a subset of the provider's current allowlist; empty, malformed, duplicate, or retired scopes MUST fail closed and MUST NOT resolve as an active key.";
 const activeLookupTransactionSemantics = 'API-key and entitlement lookup MUST row-lock the matching key in a serializable transaction before evaluating active, revocation, expiry, or current-scope state. Expiry MUST be evaluated with a non-transaction-start persistence wall clock after the lock and rechecked after response validation immediately before COMMIT; unknown, inactive, concurrently revoked, expired, or invalid-scope keys MUST fail closed without disclosure. Entitlement lookup MUST also row-lock the resolved organization entitlement before response validation.';
 const IdentityApiKeyResponseSchema = z.object({
   key_id: z.string().uuid(),
   organization_id: z.string().min(1),
-  name: z.string().min(1),
+  name: z.string().min(1).max(255).refine(canonicalMetadataValue).describe(canonicalPersistedApiKeyNameSemantics),
   scopes: IdentityScopeListSchema.describe(activeApiKeyScopeSemantics),
   created_at: z.string().datetime(),
   expires_at: z.string().datetime().nullable(),
@@ -112,16 +123,7 @@ const IdentityEntitlementResponseSchema = z.object({
 const identityScopeConfigurationSemantics = 'Provider identity scope configuration MUST define non-empty allowed and default scope lists containing non-empty strings without Unicode White_Space property characters, Unicode C0/C1 control characters, Unicode General Category Cf format controls, Unicode noncharacter code points, Unicode private-use code points, Unicode variation selectors, Unicode default-ignorable code points, or Unicode combining marks, unique within each list, with every default scope present in the allowed list. Malformed, duplicate, empty, whitespace-bearing, control-bearing, format-control-bearing, noncharacter-bearing, private-use-bearing, variation-selector-bearing, default-ignorable-bearing, combining-mark-bearing, non-NFKC, or unsupported configured scopes MUST fail closed at startup and request time instead of being normalized, trimmed, sanitized, or deduplicated. Every configured scope MUST contain only Unicode scalar values and already use exact NFKC normalization; unpaired UTF-16 surrogate escapes, canonically or compatibility-equivalent alternate spellings, whitespace-bearing values, control-bearing values, format-control-bearing values, noncharacter-bearing values, private-use-bearing values, variation-selector-bearing values, default-ignorable-bearing values, and combining-mark-bearing values MUST fail closed at startup and request time before session creation or persistence access.';
 const cliMetadataUnicodeSemantics = 'CLI session metadata fields cli_name, cli_version, hostname, and key_name MUST contain only Unicode scalar values. Unpaired UTF-16 surrogate escapes MUST fail closed before identity verification, provisional session insertion, API-key insertion, session mutation, or persistence access; providers MUST NOT rely on lossy UTF-8 replacement during persistence or replay comparison.';
 const canonicalCliMetadataSemantics = 'CLI metadata values MUST be non-empty NFC-normalized strings without surrounding whitespace, Unicode C0/C1 control characters, Unicode line or paragraph separators, Unicode format controls, Unicode noncharacter code points, or Unicode private-use code points. Empty, non-NFC, whitespace-only, whitespace-padded, control-bearing, separator-bearing, format-control-bearing, noncharacter-bearing, or private-use-bearing values MUST fail closed before identity verification, provisional session insertion, API-key insertion, session mutation, or persistence access; providers MUST NOT normalize, trim, or sanitize caller input.';
-const canonicalCliMetadata = (value) =>
-  value.normalize('NFC') === value &&
-  value.trim() === value &&
-  !/[\u0000-\u001F\u007F-\u009F]/u.test(value) &&
-  !/[\u2028\u2029]/u.test(value) &&
-  !/\p{Cf}/u.test(value) &&
-  !/\p{Noncharacter_Code_Point}/u.test(value) &&
-  !/\p{Co}/u.test(value) &&
-  !/[\u061C\u200E\u200F\u202A-\u202E\u2066-\u2069]/u.test(value) &&
-  isWellFormedUnicode(value);
+const canonicalCliMetadata = canonicalMetadataValue;
 const IdentityCliSessionCreateSchema = z.object({
   cli_name: z.string().min(1).max(255).refine(canonicalCliMetadata).describe(canonicalCliMetadataSemantics).optional(),
   cli_version: z.string().min(1).max(255).refine(canonicalCliMetadata).describe(canonicalCliMetadataSemantics).optional(),
