@@ -33,7 +33,7 @@ ajv.addKeyword({
   keyword: 'x-unicode-normalization',
   schemaType: 'string',
   type: 'string',
-  validate: (form, value) => form === 'NFC' && value.normalize('NFC') === value,
+  validate: (form, value) => ['NFC', 'NFKC'].includes(form) && value.normalize(form) === value,
 });
 const files = (await Promise.all(roots.map(schemasUnder))).flat().sort();
 const schemas = await Promise.all(files.map(async (file) => ({
@@ -89,7 +89,7 @@ const duplicateScopeResponse = {
 requireInvalid('identity-api-key-response', duplicateScopeResponse);
 requireRuntimeInvalid(contracts.IdentityApiKeyResponseSchema, duplicateScopeResponse, 'identity-api-key-response');
 const activeApiKeyScopeSemantics = "An active API key response MUST contain a non-empty unique scope list that remains a subset of the provider's current allowlist; empty, malformed, duplicate, or retired scopes MUST fail closed and MUST NOT resolve as an active key.";
-const canonicalIdentityScopeSemantics = 'Every configured, requested, and persisted identity scope MUST be a non-empty Unicode-scalar string already in exact NFC normalization and MUST NOT contain Unicode White_Space property characters, Unicode C0/C1 control characters, Unicode General Category Cf format controls, Unicode noncharacter code points, or Unicode private-use code points. Canonically equivalent alternate spellings, whitespace-bearing values, control-bearing values, format-control-bearing values, noncharacter-bearing values, and private-use-bearing values MUST fail closed before identity verification, entitlement evaluation, API-key creation, response emission, or persistence access; providers MUST NOT normalize, trim, or sanitize caller, configuration, or persisted scope values.';
+const canonicalIdentityScopeSemantics = 'Every configured, requested, and persisted identity scope MUST be a non-empty Unicode-scalar string already in exact NFKC normalization and MUST NOT contain Unicode White_Space property characters, Unicode C0/C1 control characters, Unicode General Category Cf format controls, Unicode noncharacter code points, or Unicode private-use code points. Canonically or compatibility-equivalent alternate spellings, whitespace-bearing values, control-bearing values, format-control-bearing values, noncharacter-bearing values, and private-use-bearing values MUST fail closed before identity verification, entitlement evaluation, API-key creation, response emission, or persistence access; providers MUST NOT normalize, trim, or sanitize caller, configuration, or persisted scope values.';
 const activeLookupTransactionSemantics = 'API-key and entitlement lookup MUST row-lock the matching key in a serializable transaction before evaluating active, revocation, expiry, or current-scope state. Expiry MUST be evaluated with a non-transaction-start persistence wall clock after the lock and rechecked after response validation immediately before COMMIT; unknown, inactive, concurrently revoked, expired, or invalid-scope keys MUST fail closed without disclosure. Entitlement lookup MUST also row-lock the resolved organization entitlement before response validation.';
 const apiKeyResponseSchema = schemas.find(({ file }) => file.endsWith('identity-api-key-response.schema.json'))?.schema;
 if (apiKeyResponseSchema?.properties?.scopes?.description !== activeApiKeyScopeSemantics) {
@@ -99,17 +99,26 @@ if (contracts.IdentityApiKeyResponseSchema.shape.scopes.description !== activeAp
   throw new Error('identity-api-key-response runtime validator drifted from active allowlist scope semantics');
 }
 if (apiKeyResponseSchema?.properties?.scopes?.items?.description !== canonicalIdentityScopeSemantics ||
-    apiKeyResponseSchema?.properties?.scopes?.items?.['x-unicode-normalization'] !== 'NFC' ||
+    apiKeyResponseSchema?.properties?.scopes?.items?.['x-unicode-normalization'] !== 'NFKC' ||
     contracts.IdentityApiKeyResponseSchema.shape.scopes.element.description !== canonicalIdentityScopeSemantics) {
   throw new Error('identity-api-key-response lacks canonical identity-scope semantics');
 }
 for (const scope of ['simulation:e\u0301xecute', 'simulation:A\u030Angstrom']) {
-  const nonNfcScopeResponse = { ...duplicateScopeResponse, scopes: [scope] };
-  requireInvalid('identity-api-key-response', nonNfcScopeResponse);
+  const nonNfkcScopeResponse = { ...duplicateScopeResponse, scopes: [scope] };
+  requireInvalid('identity-api-key-response', nonNfkcScopeResponse);
   requireRuntimeInvalid(
     contracts.IdentityApiKeyResponseSchema,
-    nonNfcScopeResponse,
-    'identity-api-key-response non-NFC scope',
+    nonNfkcScopeResponse,
+    'identity-api-key-response non-NFKC scope',
+  );
+}
+for (const scope of ['simulation:\uFF52un', 'simulation:\uFF45xecute']) {
+  const nonNfkcScopeResponse = { ...duplicateScopeResponse, scopes: [scope] };
+  requireInvalid('identity-api-key-response', nonNfkcScopeResponse);
+  requireRuntimeInvalid(
+    contracts.IdentityApiKeyResponseSchema,
+    nonNfkcScopeResponse,
+    'identity-api-key-response compatibility-equivalent non-NFKC scope',
   );
 }
 for (const scope of ['simulation:\u0000run', 'simulation:\u0085run']) {
@@ -290,12 +299,21 @@ requireRuntimeInvalid(
   'identity-cli-session-create empty scopes',
 );
 for (const scope of ['simulation:e\u0301xecute', 'simulation:A\u030Angstrom']) {
-  const nonNfcScopeCreate = { scopes: [scope] };
-  requireInvalid('identity-cli-session-create', nonNfcScopeCreate);
+  const nonNfkcScopeCreate = { scopes: [scope] };
+  requireInvalid('identity-cli-session-create', nonNfkcScopeCreate);
   requireRuntimeInvalid(
     contracts.IdentityCliSessionCreateSchema,
-    nonNfcScopeCreate,
-    'identity-cli-session-create non-NFC scope',
+    nonNfkcScopeCreate,
+    'identity-cli-session-create non-NFKC scope',
+  );
+}
+for (const scope of ['simulation:\uFF52un', 'simulation:\uFF45xecute']) {
+  const nonNfkcScopeCreate = { scopes: [scope] };
+  requireInvalid('identity-cli-session-create', nonNfkcScopeCreate);
+  requireRuntimeInvalid(
+    contracts.IdentityCliSessionCreateSchema,
+    nonNfkcScopeCreate,
+    'identity-cli-session-create compatibility-equivalent non-NFKC scope',
   );
 }
 for (const scope of ['simulation:\u0000run', 'simulation:\u0085run']) {
@@ -433,7 +451,7 @@ for (const field of ['cli_name', 'cli_version', 'hostname']) {
     );
   }
 }
-const identityScopeConfigurationSemantics = 'Provider identity scope configuration MUST define non-empty allowed and default scope lists containing non-empty strings without Unicode White_Space property characters, Unicode C0/C1 control characters, Unicode General Category Cf format controls, Unicode noncharacter code points, or Unicode private-use code points, unique within each list, with every default scope present in the allowed list. Malformed, duplicate, empty, whitespace-bearing, control-bearing, format-control-bearing, noncharacter-bearing, private-use-bearing, non-NFC, or unsupported configured scopes MUST fail closed at startup and request time instead of being normalized, trimmed, sanitized, or deduplicated. Every configured scope MUST contain only Unicode scalar values and already use exact NFC normalization; unpaired UTF-16 surrogate escapes, canonically equivalent alternate spellings, whitespace-bearing values, control-bearing values, format-control-bearing values, noncharacter-bearing values, and private-use-bearing values MUST fail closed at startup and request time before session creation or persistence access.';
+const identityScopeConfigurationSemantics = 'Provider identity scope configuration MUST define non-empty allowed and default scope lists containing non-empty strings without Unicode White_Space property characters, Unicode C0/C1 control characters, Unicode General Category Cf format controls, Unicode noncharacter code points, or Unicode private-use code points, unique within each list, with every default scope present in the allowed list. Malformed, duplicate, empty, whitespace-bearing, control-bearing, format-control-bearing, noncharacter-bearing, private-use-bearing, non-NFKC, or unsupported configured scopes MUST fail closed at startup and request time instead of being normalized, trimmed, sanitized, or deduplicated. Every configured scope MUST contain only Unicode scalar values and already use exact NFKC normalization; unpaired UTF-16 surrogate escapes, canonically or compatibility-equivalent alternate spellings, whitespace-bearing values, control-bearing values, format-control-bearing values, noncharacter-bearing values, and private-use-bearing values MUST fail closed at startup and request time before session creation or persistence access.';
 const createAuthority = schemas.find(({ schema }) =>
   schema.$id === 'https://agentics.org/contracts/data-plane/v1/identity-cli-session-create.schema.json'
 )?.schema;
@@ -444,7 +462,7 @@ if (contracts.IdentityCliSessionCreateSchema.description !== identityScopeConfig
   throw new Error('identity-cli-session-create runtime validator drifted from scope configuration semantics');
 }
 if (createAuthority?.properties?.scopes?.items?.description !== canonicalIdentityScopeSemantics ||
-    createAuthority?.properties?.scopes?.items?.['x-unicode-normalization'] !== 'NFC' ||
+    createAuthority?.properties?.scopes?.items?.['x-unicode-normalization'] !== 'NFKC' ||
     contracts.IdentityCliSessionCreateSchema.shape.scopes.unwrap().element.description !== canonicalIdentityScopeSemantics) {
   throw new Error('identity-cli-session-create lacks canonical identity-scope semantics');
 }
@@ -484,12 +502,21 @@ requireRuntimeInvalid(
   'identity-cli-session-authorize empty scopes',
 );
 for (const scope of ['simulation:e\u0301xecute', 'simulation:A\u030Angstrom']) {
-  const nonNfcScopeAuthorization = { session_code: 'ABCD1234', scopes: [scope] };
-  requireInvalid('identity-cli-session-authorize', nonNfcScopeAuthorization);
+  const nonNfkcScopeAuthorization = { session_code: 'ABCD1234', scopes: [scope] };
+  requireInvalid('identity-cli-session-authorize', nonNfkcScopeAuthorization);
   requireRuntimeInvalid(
     contracts.IdentityCliSessionAuthorizeSchema,
-    nonNfcScopeAuthorization,
-    'identity-cli-session-authorize non-NFC scope',
+    nonNfkcScopeAuthorization,
+    'identity-cli-session-authorize non-NFKC scope',
+  );
+}
+for (const scope of ['simulation:\uFF52un', 'simulation:\uFF45xecute']) {
+  const nonNfkcScopeAuthorization = { session_code: 'ABCD1234', scopes: [scope] };
+  requireInvalid('identity-cli-session-authorize', nonNfkcScopeAuthorization);
+  requireRuntimeInvalid(
+    contracts.IdentityCliSessionAuthorizeSchema,
+    nonNfkcScopeAuthorization,
+    'identity-cli-session-authorize compatibility-equivalent non-NFKC scope',
   );
 }
 for (const scope of ['simulation:\u0000run', 'simulation:\u0085run']) {
@@ -538,7 +565,7 @@ for (const scope of ['simulation:\uE000run', 'simulation:\u{F0000}run']) {
   );
 }
 if (authorizeAuthority?.properties?.scopes?.items?.description !== canonicalIdentityScopeSemantics ||
-    authorizeAuthority?.properties?.scopes?.items?.['x-unicode-normalization'] !== 'NFC' ||
+    authorizeAuthority?.properties?.scopes?.items?.['x-unicode-normalization'] !== 'NFKC' ||
     contracts.IdentityCliSessionAuthorizeSchema.shape.scopes.unwrap().element.description !== canonicalIdentityScopeSemantics) {
   throw new Error('identity-cli-session-authorize lacks canonical identity-scope semantics');
 }
