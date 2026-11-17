@@ -98,12 +98,14 @@ const canonicalMetadataValue = (value) =>
   !/\p{Co}/u.test(value) &&
   !/[\u061C\u200E\u200F\u202A-\u202E\u2066-\u2069]/u.test(value) &&
   isWellFormedUnicode(value);
+const canonicalIdentityOrganizationSemantics = 'Every persisted organization_id resolved from an API key or entitlement MUST be a non-empty, at-most-255-character, exact NFC-normalized Unicode-scalar string without surrounding whitespace, Unicode C0/C1 control characters, Unicode line or paragraph separators, Unicode format or bidirectional controls, Unicode noncharacter code points, or Unicode private-use code points. Malformed or noncanonical persisted organization identifiers MUST fail closed immediately after the API-key row lock and before key activity evaluation, entitlement access, response emission, or COMMIT; providers MUST NOT normalize, trim, sanitize, coerce, or disclose them.';
+const IdentityOrganizationIdSchema = z.string().min(1).max(255).refine(canonicalMetadataValue).describe(canonicalIdentityOrganizationSemantics);
 const canonicalPersistedApiKeyNameSemantics = 'Every persisted API-key name returned by active-key lookup MUST remain a non-empty NFC-normalized Unicode-scalar string without surrounding whitespace, Unicode C0/C1 control characters, Unicode line or paragraph separators, Unicode format or bidirectional controls, Unicode noncharacter code points, or Unicode private-use code points. Malformed or noncanonical persisted names MUST fail closed after the key row lock and before response emission or COMMIT; providers MUST NOT normalize, trim, sanitize, or disclose them.';
 const activeApiKeyScopeSemantics = "An active API key response MUST contain a non-empty unique scope list that remains a subset of the provider's current allowlist; empty, malformed, duplicate, or retired scopes MUST fail closed and MUST NOT resolve as an active key.";
 const activeLookupTransactionSemantics = 'API-key and entitlement lookup MUST row-lock the matching key in a serializable transaction before evaluating active, revocation, expiry, or current-scope state. Expiry MUST be evaluated with a non-transaction-start persistence wall clock after the lock and rechecked after response validation immediately before COMMIT; unknown, inactive, concurrently revoked, expired, or invalid-scope keys MUST fail closed without disclosure. Entitlement lookup MUST also row-lock the resolved organization entitlement before response validation.';
 const IdentityApiKeyResponseSchema = z.object({
   key_id: z.string().uuid(),
-  organization_id: z.string().min(1),
+  organization_id: IdentityOrganizationIdSchema,
   name: z.string().min(1).max(255).refine(canonicalMetadataValue).describe(canonicalPersistedApiKeyNameSemantics),
   scopes: IdentityScopeListSchema.describe(activeApiKeyScopeSemantics),
   created_at: z.string().datetime(),
@@ -114,7 +116,7 @@ const losslessEntitlementSemantics = 'Entitlement limits MUST be non-negative sa
 const apiKeyLimitSemantics = 'Maximum concurrently active, unrevoked, unexpired API keys permitted for the organization. Key creation MUST be denied when the current count is greater than or equal to this limit. After acquiring the per-tenant key-creation serialization lock, the provider MUST row-lock the resolved organization entitlement before reading max_api_keys or counting active keys; a concurrent entitlement change MUST block, retry, or fail serialization instead of permitting a decision from an unlocked stale limit. The active-key count MUST evaluate expiry after acquiring the per-tenant key-creation serialization lock, using a non-transaction-start persistence wall clock in the same transaction; transaction-start timestamps and service-process clock comparisons are forbidden. The limit and active count MUST remain lossless across persistence, aggregation and JSON serialization for the full safe-integer range. This value MUST be a non-negative safe JSON integer no greater than 9007199254740991; providers MUST fail closed instead of rounding a larger persisted BIGINT value.';
 const entitlementActiveKeySemantics = "Entitlement lookup MUST resolve only for an active, unrevoked, unexpired API key whose persisted scopes remain a non-empty unique subset of the provider's current allowlist. Empty, malformed, duplicate, unsupported, or retired scopes MUST fail closed with the same non-disclosing response as an unknown or inactive key.";
 const IdentityEntitlementResponseSchema = z.object({
-  organization_id: z.string().min(1),
+  organization_id: IdentityOrganizationIdSchema,
   plan: z.enum(['free','developer','team','enterprise']),
   max_requests: z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER).describe(losslessEntitlementSemantics),
   max_tokens: z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER).describe(losslessEntitlementSemantics),
@@ -291,7 +293,7 @@ module.exports = {
   CANONICAL_SCHEMA_NAMES: Object.freeze(['ExecutionIntent','ExecutionGraph','CoreExecutionResult','EvidenceSummary','PolicyDecision','CostReference','ExecutionContext','ResultPacket','DataPlanePrincipal','IdentityApiKeyLookup','IdentityApiKeyResponse','IdentityEntitlementResponse','IdentityCliSessionCreate','IdentityCliSessionCreated','IdentityCliSessionAuthorize','IdentityCliSessionAuthorized','IdentityCliSessionPoll','SimulationEventsAppendRequest','SimulationEventsResponse','ResultIndexStoreRequest','ResultIndexResponse','ResultIndexListResponse','ResultIndexScenarioResponse','ResultIndexSummaryResponse','UsageLedgerEntryAppendRequest','UsageLedgerEntryResponse','UsageLedgerBalanceResponse','UsageLedgerReservationCreateRequest','UsageLedgerReservationActionRequest','UsageLedgerReservationResponse']),
   ExecutionIntentSchema,NodeType,GraphNodeSchema,GraphEdgeSchema,ExecutionGraphSchema,EvidenceEntrySchema,EvidenceSummarySchema,
   CostReferenceSchema,ResultStatus,CoreExecutionResultSchema,PolicyDecisionSchema,ExecutionContextSchema,ResultPacketSchema,
-  DataPlanePrincipalSchema,IdentityApiKeyLookupSchema,IdentityApiKeyResponseSchema,IdentityEntitlementResponseSchema,
+  DataPlanePrincipalSchema,IdentityApiKeyLookupSchema,IdentityOrganizationIdSchema,IdentityApiKeyResponseSchema,IdentityEntitlementResponseSchema,
   IdentityCliSessionCreateSchema,IdentityCliSessionCreatedSchema,IdentityCliSessionAuthorizeSchema,IdentityCliSessionAuthorizedSchema,IdentityCliSessionPollSchema,
   SimulationEventKind,SimulationEventAppendItemSchema,SimulationEventsAppendRequestSchema,SimulationEventSchema,SimulationEventsResponseSchema,
   ResultIndexLayerRecordSchema,ResultIndexExecutionProofSchema,ResultIndexExecutionMetadataSchema,ResultIndexExecutionContextSchema,ResultIndexSummarySchema,
@@ -450,6 +452,7 @@ module.exports.ExecutionContextSchema = module.exports.ExecutionContextSchema;
 module.exports.ResultPacketSchema = module.exports.ResultPacketSchema;
 module.exports.DataPlanePrincipalSchema = module.exports.DataPlanePrincipalSchema;
 module.exports.IdentityApiKeyLookupSchema = module.exports.IdentityApiKeyLookupSchema;
+module.exports.IdentityOrganizationIdSchema = module.exports.IdentityOrganizationIdSchema;
 module.exports.IdentityApiKeyResponseSchema = module.exports.IdentityApiKeyResponseSchema;
 module.exports.IdentityEntitlementResponseSchema = module.exports.IdentityEntitlementResponseSchema;
 module.exports.IdentityCliSessionCreateSchema = module.exports.IdentityCliSessionCreateSchema;

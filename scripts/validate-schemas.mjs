@@ -90,6 +90,7 @@ requireInvalid('identity-api-key-response', duplicateScopeResponse);
 requireRuntimeInvalid(contracts.IdentityApiKeyResponseSchema, duplicateScopeResponse, 'identity-api-key-response');
 const activeApiKeyScopeSemantics = "An active API key response MUST contain a non-empty unique scope list that remains a subset of the provider's current allowlist; empty, malformed, duplicate, or retired scopes MUST fail closed and MUST NOT resolve as an active key.";
 const canonicalIdentityScopeSemantics = 'Every configured, requested, and persisted identity scope MUST be a non-empty Unicode-scalar string already in exact NFKC normalization and MUST NOT contain Unicode White_Space property characters, Unicode C0/C1 control characters, Unicode General Category Cf format controls, Unicode noncharacter code points, Unicode private-use code points, Unicode variation selectors, Unicode default-ignorable code points, or Unicode combining marks. Canonically or compatibility-equivalent alternate spellings, whitespace-bearing values, control-bearing values, format-control-bearing values, noncharacter-bearing values, private-use-bearing values, variation-selector-bearing values, default-ignorable-bearing values, and combining-mark-bearing values MUST fail closed before identity verification, entitlement evaluation, API-key creation, response emission, or persistence access; providers MUST NOT normalize, trim, or sanitize caller, configuration, or persisted scope values.';
+const canonicalIdentityOrganizationSemantics = 'Every persisted organization_id resolved from an API key or entitlement MUST be a non-empty, at-most-255-character, exact NFC-normalized Unicode-scalar string without surrounding whitespace, Unicode C0/C1 control characters, Unicode line or paragraph separators, Unicode format or bidirectional controls, Unicode noncharacter code points, or Unicode private-use code points. Malformed or noncanonical persisted organization identifiers MUST fail closed immediately after the API-key row lock and before key activity evaluation, entitlement access, response emission, or COMMIT; providers MUST NOT normalize, trim, sanitize, coerce, or disclose them.';
 const canonicalPersistedApiKeyNameSemantics = 'Every persisted API-key name returned by active-key lookup MUST remain a non-empty NFC-normalized Unicode-scalar string without surrounding whitespace, Unicode C0/C1 control characters, Unicode line or paragraph separators, Unicode format or bidirectional controls, Unicode noncharacter code points, or Unicode private-use code points. Malformed or noncanonical persisted names MUST fail closed after the key row lock and before response emission or COMMIT; providers MUST NOT normalize, trim, sanitize, or disclose them.';
 const activeLookupTransactionSemantics = 'API-key and entitlement lookup MUST row-lock the matching key in a serializable transaction before evaluating active, revocation, expiry, or current-scope state. Expiry MUST be evaluated with a non-transaction-start persistence wall clock after the lock and rechecked after response validation immediately before COMMIT; unknown, inactive, concurrently revoked, expired, or invalid-scope keys MUST fail closed without disclosure. Entitlement lookup MUST also row-lock the resolved organization entitlement before response validation.';
 const apiKeyResponseSchema = schemas.find(({ file }) => file.endsWith('identity-api-key-response.schema.json'))?.schema;
@@ -99,6 +100,30 @@ if (apiKeyResponseSchema?.properties?.scopes?.description !== activeApiKeyScopeS
 if (contracts.IdentityApiKeyResponseSchema.shape.scopes.description !== activeApiKeyScopeSemantics) {
   throw new Error('identity-api-key-response runtime validator drifted from active allowlist scope semantics');
 }
+if (apiKeyResponseSchema?.properties?.organization_id?.description !== canonicalIdentityOrganizationSemantics ||
+    apiKeyResponseSchema?.properties?.organization_id?.['x-unicode-normalization'] !== 'NFC' ||
+    contracts.IdentityApiKeyResponseSchema.shape.organization_id.description !== canonicalIdentityOrganizationSemantics ||
+    contracts.IdentityOrganizationIdSchema.description !== canonicalIdentityOrganizationSemantics) {
+  throw new Error('identity-api-key-response lacks canonical persisted organization semantics');
+}
+for (const persistedOrganizationId of ['org\u0000admin', 'org\uD800admin', ' org-admin']) {
+  const malformedOrganizationResponse = {
+    ...duplicateScopeResponse,
+    organization_id: persistedOrganizationId,
+    scopes: ['simulation:run'],
+  };
+  requireInvalid('identity-api-key-response', malformedOrganizationResponse);
+  requireRuntimeInvalid(
+    contracts.IdentityApiKeyResponseSchema,
+    malformedOrganizationResponse,
+    'identity-api-key-response malformed persisted organization',
+  );
+}
+requireRuntimeInvalid(
+  contracts.IdentityApiKeyResponseSchema,
+  { ...duplicateScopeResponse, organization_id: 'org-e\u0301', scopes: ['simulation:run'] },
+  'identity-api-key-response non-NFC persisted organization',
+);
 if (apiKeyResponseSchema?.properties?.name?.description !== canonicalPersistedApiKeyNameSemantics ||
     apiKeyResponseSchema?.properties?.name?.['x-unicode-normalization'] !== 'NFC' ||
     contracts.IdentityApiKeyResponseSchema.shape.name.description !== canonicalPersistedApiKeyNameSemantics) {
@@ -241,6 +266,37 @@ const apiKeyLimitSemantics = 'Maximum concurrently active, unrevoked, unexpired 
 const entitlementAuthority = schemas.find(({ schema }) =>
   schema.$id === 'https://agentics.org/contracts/data-plane/v1/identity-entitlement-response.schema.json'
 )?.schema;
+if (entitlementAuthority?.properties?.organization_id?.description !== canonicalIdentityOrganizationSemantics ||
+    entitlementAuthority?.properties?.organization_id?.['x-unicode-normalization'] !== 'NFC' ||
+    contracts.IdentityEntitlementResponseSchema.shape.organization_id.description !== canonicalIdentityOrganizationSemantics) {
+  throw new Error('identity-entitlement-response lacks canonical persisted organization semantics');
+}
+for (const persistedOrganizationId of ['org\u0000admin', 'org\uD800admin', ' org-admin']) {
+  const malformedOrganizationEntitlement = {
+    organization_id: persistedOrganizationId,
+    plan: 'developer',
+    max_requests: 10000,
+    max_tokens: 1000000,
+    max_api_keys: 10,
+  };
+  requireInvalid('identity-entitlement-response', malformedOrganizationEntitlement);
+  requireRuntimeInvalid(
+    contracts.IdentityEntitlementResponseSchema,
+    malformedOrganizationEntitlement,
+    'identity-entitlement-response malformed persisted organization',
+  );
+}
+requireRuntimeInvalid(
+  contracts.IdentityEntitlementResponseSchema,
+  {
+    organization_id: 'org-e\u0301',
+    plan: 'developer',
+    max_requests: 10000,
+    max_tokens: 1000000,
+    max_api_keys: 10,
+  },
+  'identity-entitlement-response non-NFC persisted organization',
+);
 const entitlementActiveKeySemantics = "Entitlement lookup MUST resolve only for an active, unrevoked, unexpired API key whose persisted scopes remain a non-empty unique subset of the provider's current allowlist. Empty, malformed, duplicate, unsupported, or retired scopes MUST fail closed with the same non-disclosing response as an unknown or inactive key.";
 if (entitlementAuthority?.description !== entitlementActiveKeySemantics + ' ' + activeLookupTransactionSemantics) {
   throw new Error('identity-entitlement-response lacks active-key scope binding semantics');
