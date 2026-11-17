@@ -185,7 +185,8 @@ const endUserJwtProtectedHeaderSemantics = 'The end-user JWT MUST use compact se
 const endUserJwtConfigurationSemantics = 'The configured end-user JWT issuer and JWKS URI MUST be exact canonically serialized HTTPS URLs without surrounding whitespace: parsing and serializing either URL MUST reproduce the exact configured string. Neither URL may contain a username, password, or fragment, and the issuer may not contain a query. Alternate serializations, explicit default ports, path dot segments, credential-bearing URLs, fragments, and query-bearing issuers MUST fail closed before JWKS lookup, membership access, or persistence access. The configured audience MUST be a non-empty string without surrounding whitespace and MUST contain only Unicode scalar values; unpaired UTF-16 surrogate escapes MUST fail closed at startup and request time before JWKS lookup, membership access, or persistence access. Providers MUST validate this configuration at startup and request time before JWKS lookup, membership access, or persistence access, and MUST use one exact validated snapshot for signature verification, claim matching, and the returned issuer. Malformed, empty, whitespace-only, whitespace-padded, non-canonical, credential-bearing, fragment-bearing, query-bearing issuer, or non-string configuration MUST fail closed as a provider configuration error rather than an invalid user credential.';
 const endUserJwtEmailSemantics = 'The optional email claim, when present, MUST be a valid non-empty email string without surrounding whitespace and MUST be normalized to lowercase only after validation. A malformed, empty, whitespace-padded, or non-string email claim MUST fail closed before membership or persistence access instead of being treated as absent.';
 const endUserJwtLifetimeSemantics = endUserJwtProtectedHeaderSemantics + ' ' + endUserJwtConfigurationSemantics + ' CLI authorization MUST accept exactly one Authorization credential containing a non-empty Bearer JWT without surrounding token whitespace; missing, duplicate, empty, or whitespace-padded credentials MUST fail closed before identity verification, membership access, or persistence access. Providers MUST determine Authorization multiplicity from the raw wire-level header occurrences; normalized header maps that collapse duplicates are insufficient. The end-user JWT used for CLI authorization MUST be signature-verified and contain the configured issuer and audience, a non-empty string subject without surrounding whitespace, and a valid numeric expiration claim. Missing, malformed, empty, whitespace-padded, or non-string subject claims and missing, malformed, or expired expiration MUST fail closed before membership or persistence access; a correctly signed token without exp is not an authorized identity. The aud claim MUST be either the configured non-empty audience string or a non-empty array of unique non-empty strings without surrounding whitespace containing the configured audience exactly once. Every audience entry and any present azp MUST contain only Unicode scalar values; malformed, empty, whitespace-only, whitespace-padded, duplicate, or unpaired-surrogate audience values MUST fail closed before membership or persistence access. When aud contains multiple values, azp MUST be present and exactly match the configured audience; whenever azp is present it MUST match that audience. Missing or mismatched authorized-party binding MUST fail closed before membership or persistence access. ' + endUserJwtEmailSemantics;
-const ownerAuthorizationSemantics = endUserJwtLifetimeSemantics + " CLI session authorization MUST be performed by an active tenant membership with role owner, resolved from the verified issuer and subject; caller-supplied tenant ownership is forbidden. The verified issuer and subject MUST resolve to exactly one active tenant membership before CLI session access; zero or multiple active memberships MUST fail closed instead of selecting an arbitrary organization. The provider MUST revalidate the row-locked session's persisted requested scopes as a non-empty unique subset of the current allowlist before API-key creation; malformed, duplicate, empty, unsupported, or retired persisted scopes MUST fail closed. " + authorizationReplayRequestSemantics + ' ' + sessionExpirySemantics + ' ' + authorizationPrecommitSemantics + ' ' + finalSessionExpirySemantics + ' ' + postWriteSessionExpirySemantics + ' ' + sessionEncryptionConfigurationSemantics;
+const cliMetadataUnicodeSemantics = 'CLI session metadata fields cli_name, cli_version, hostname, and key_name MUST contain only Unicode scalar values. Unpaired UTF-16 surrogate escapes MUST fail closed before identity verification, provisional session insertion, API-key insertion, session mutation, or persistence access; providers MUST NOT rely on lossy UTF-8 replacement during persistence or replay comparison.';
+const ownerAuthorizationSemantics = endUserJwtLifetimeSemantics + ' ' + cliMetadataUnicodeSemantics + " CLI session authorization MUST be performed by an active tenant membership with role owner, resolved from the verified issuer and subject; caller-supplied tenant ownership is forbidden. The verified issuer and subject MUST resolve to exactly one active tenant membership before CLI session access; zero or multiple active memberships MUST fail closed instead of selecting an arbitrary organization. The provider MUST revalidate the row-locked session's persisted requested scopes as a non-empty unique subset of the current allowlist before API-key creation; malformed, duplicate, empty, unsupported, or retired persisted scopes MUST fail closed. " + authorizationReplayRequestSemantics + ' ' + sessionExpirySemantics + ' ' + authorizationPrecommitSemantics + ' ' + finalSessionExpirySemantics + ' ' + postWriteSessionExpirySemantics + ' ' + sessionEncryptionConfigurationSemantics;
 const authorizeAuthority = schemas.find(({ schema }) =>
   schema.$id === 'https://agentics.org/contracts/data-plane/v1/identity-cli-session-authorize.schema.json'
 )?.schema;
@@ -221,14 +222,23 @@ requireRuntimeInvalid(
   emptyScopeCreate,
   'identity-cli-session-create empty scopes',
 );
+for (const field of ['cli_name', 'cli_version', 'hostname']) {
+  const malformedMetadata = { [field]: '\uD800' };
+  requireInvalid('identity-cli-session-create', malformedMetadata);
+  requireRuntimeInvalid(
+    contracts.IdentityCliSessionCreateSchema,
+    malformedMetadata,
+    `identity-cli-session-create malformed ${field}`,
+  );
+}
 const identityScopeConfigurationSemantics = 'Provider identity scope configuration MUST define non-empty allowed and default scope lists containing non-empty strings without surrounding whitespace, unique within each list, with every default scope present in the allowed list. Malformed, duplicate, empty, whitespace-padded, or unsupported configured scopes MUST fail closed at startup and request time instead of being normalized or deduplicated. Every configured scope MUST contain only Unicode scalar values; unpaired UTF-16 surrogate escapes MUST fail closed at startup and request time before session creation or persistence access.';
 const createAuthority = schemas.find(({ schema }) =>
   schema.$id === 'https://agentics.org/contracts/data-plane/v1/identity-cli-session-create.schema.json'
 )?.schema;
-if (createAuthority?.description !== identityScopeConfigurationSemantics) {
+if (createAuthority?.description !== identityScopeConfigurationSemantics + ' ' + cliMetadataUnicodeSemantics) {
   throw new Error('identity-cli-session-create lacks strict scope configuration semantics');
 }
-if (contracts.IdentityCliSessionCreateSchema.description !== identityScopeConfigurationSemantics) {
+if (contracts.IdentityCliSessionCreateSchema.description !== identityScopeConfigurationSemantics + ' ' + cliMetadataUnicodeSemantics) {
   throw new Error('identity-cli-session-create runtime validator drifted from scope configuration semantics');
 }
 const sessionCreateAtomicitySemantics = 'CLI session creation MUST insert the provisional session and validate the complete create response inside one serializable transaction before COMMIT. Response construction or validation failure MUST roll back the provisional session so an error cannot leave a durable orphaned session.';
@@ -258,6 +268,13 @@ requireRuntimeInvalid(
   contracts.IdentityCliSessionAuthorizeSchema,
   emptyScopeAuthorization,
   'identity-cli-session-authorize empty scopes',
+);
+const malformedKeyNameAuthorization = { session_code: 'ABCD1234', key_name: '\uD800' };
+requireInvalid('identity-cli-session-authorize', malformedKeyNameAuthorization);
+requireRuntimeInvalid(
+  contracts.IdentityCliSessionAuthorizeSchema,
+  malformedKeyNameAuthorization,
+  'identity-cli-session-authorize malformed key_name',
 );
 const emptyScopeResponse = {
   key_id: '11111111-1111-4111-8111-111111111111',
