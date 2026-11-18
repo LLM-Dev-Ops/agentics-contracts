@@ -96,6 +96,7 @@ const canonicalPersistedMembershipPaymentStatusSemantics = 'Every persisted paym
 const canonicalPersistedApiKeyNameSemantics = 'Every persisted API-key name returned by active-key lookup MUST remain a non-empty NFC-normalized Unicode-scalar string without surrounding whitespace, Unicode C0/C1 control characters, Unicode line or paragraph separators, Unicode format or bidirectional controls, Unicode noncharacter code points, or Unicode private-use code points. Malformed or noncanonical persisted names MUST fail closed after the key row lock and before response emission or COMMIT; providers MUST NOT normalize, trim, sanitize, or disclose them.';
 const canonicalPersistedApiKeyIdSemantics = 'Every persisted API-key identifier resolved from an active key row or completed CLI session MUST already be an exact lowercase canonical RFC 4122 UUID. Malformed, uppercase, non-string, empty, or alternate identifiers MUST fail closed immediately after the relevant row lock and before key-activity evaluation, membership or entitlement access, response emission, persistence mutation, or COMMIT; providers MUST NOT lowercase, normalize, coerce, infer, or disclose them.';
 const canonicalPersistedCliSessionStatusSemantics = 'Every persisted CLI session status resolved for authorization or polling MUST be exactly pending or completed. Missing, malformed, non-string, or alternate values MUST fail closed immediately after the session row lock and before session-expiry evaluation, tenant-quota, membership, API-key, delivery-state, response, persistence-mutation, or COMMIT access; providers MUST NOT normalize, coerce, infer, or disclose them.';
+const canonicalPersistedCliAuthorizingIdentitySemantics = 'Every completed CLI session authorized_issuer MUST be the exact configured canonical HTTPS end-user JWT issuer and authorized_subject MUST be a non-empty Unicode-scalar string without surrounding whitespace. Missing, malformed, non-string, whitespace-padded, noncanonical, or configuration-mismatched values MUST fail closed immediately after the session row lock and before session-expiry evaluation, membership, API-key, delivery-state, response, persistence-mutation, or COMMIT access; providers MUST validate one exact verifier-configuration snapshot and MUST NOT normalize, trim, coerce, infer, or disclose persisted authorizing identity values.';
 const activeLookupTransactionSemantics = 'API-key and entitlement lookup MUST row-lock the matching key in a serializable transaction before evaluating active, revocation, expiry, or current-scope state. Expiry MUST be evaluated with a non-transaction-start persistence wall clock after the lock and rechecked after response validation immediately before COMMIT; unknown, inactive, concurrently revoked, expired, or invalid-scope keys MUST fail closed without disclosure. Entitlement lookup MUST also row-lock the resolved organization entitlement before response validation.';
 const apiKeyResponseSchema = schemas.find(({ file }) => file.endsWith('identity-api-key-response.schema.json'))?.schema;
 const cliSessionAuthorizedSchema = schemas.find(({ file }) => file.endsWith('identity-cli-session-authorized.schema.json'))?.schema;
@@ -416,6 +417,29 @@ if (authorizeAuthority?.['x-persisted-membership-payment-status'] !== canonicalP
 if (authorizeAuthority?.['x-persisted-cli-session-status'] !== canonicalPersistedCliSessionStatusSemantics ||
     contracts.IdentityCliSessionStatusSchema.description !== canonicalPersistedCliSessionStatusSemantics) {
   throw new Error('identity-cli-session-authorize lacks canonical persisted session-status semantics');
+}
+if (authorizeAuthority?.['x-persisted-cli-authorizing-identity'] !== canonicalPersistedCliAuthorizingIdentitySemantics ||
+    contracts.IdentityEndUserIssuerSchema.description !== canonicalPersistedCliAuthorizingIdentitySemantics ||
+    contracts.IdentityEndUserSubjectSchema.description !== canonicalPersistedCliAuthorizingIdentitySemantics) {
+  throw new Error('identity-cli-session-authorize lacks canonical persisted authorizing-identity semantics');
+}
+if (!contracts.IdentityEndUserIssuerSchema.safeParse('https://identity.test/auth/v1').success ||
+    !contracts.IdentityEndUserSubjectSchema.safeParse('user-1').success) {
+  throw new Error('persisted CLI authorizing-identity authority rejected canonical values');
+}
+for (const persistedIssuer of [' https://identity.test/auth/v1', 'https://identity.test:443/auth/v1', 'http://identity.test/auth/v1', 1, null]) {
+  requireRuntimeInvalid(
+    contracts.IdentityEndUserIssuerSchema,
+    persistedIssuer,
+    'identity-cli-session malformed persisted issuer',
+  );
+}
+for (const persistedSubject of ['', ' user-1', 'user-1 ', '\uD800', 1, null]) {
+  requireRuntimeInvalid(
+    contracts.IdentityEndUserSubjectSchema,
+    persistedSubject,
+    'identity-cli-session malformed persisted subject',
+  );
 }
 for (const persistedSessionStatus of ['pending', 'completed']) {
   if (!contracts.IdentityCliSessionStatusSchema.safeParse(persistedSessionStatus).success) {
@@ -984,6 +1008,9 @@ if (pollAuthority?.['x-persisted-membership-payment-status'] !== canonicalPersis
 }
 if (pollAuthority?.['x-persisted-cli-session-status'] !== canonicalPersistedCliSessionStatusSemantics) {
   throw new Error('identity-cli-session-poll lacks canonical persisted session-status semantics');
+}
+if (pollAuthority?.['x-persisted-cli-authorizing-identity'] !== canonicalPersistedCliAuthorizingIdentitySemantics) {
+  throw new Error('identity-cli-session-poll lacks canonical persisted authorizing-identity semantics');
 }
 
 console.log(`validated ${files.length} authoritative schemas`);
