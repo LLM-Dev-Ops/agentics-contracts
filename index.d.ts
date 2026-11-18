@@ -26,6 +26,7 @@ export interface DataPlanePrincipal { subject:string;principal:string;organizati
 export const DataPlanePrincipalSchema: z.ZodType<DataPlanePrincipal>;
 export interface IdentityApiKeyLookup { key_hash:string }
 export const IdentityApiKeyLookupSchema: z.ZodType<IdentityApiKeyLookup>;
+export const IdentityApiKeyIdSchema: z.ZodType<string>;
 export const IdentityOrganizationIdSchema: z.ZodType<string>;
 export const IdentityMembershipEmailSchema: z.ZodType<string>;
 export type IdentityMembershipPaymentStatus = 'paid'|'unpaid'|'trial'|'internal';

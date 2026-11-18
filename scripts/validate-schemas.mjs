@@ -94,8 +94,40 @@ const canonicalIdentityOrganizationSemantics = 'Every persisted organization_id 
 const canonicalPersistedMembershipEmailSemantics = 'Every persisted email resolved from an active identity membership MUST be a valid non-empty, at-most-320-character, exact lowercase NFC-normalized Unicode-scalar email string without surrounding whitespace, Unicode C0/C1 control characters, Unicode line or paragraph separators, Unicode format or bidirectional controls, Unicode noncharacter code points, or Unicode private-use code points. Malformed or noncanonical membership email values MUST fail closed immediately after the membership row lock and before CLI session, tenant-quota, API-key, delivery-state, response, persistence-mutation, or COMMIT access; providers MUST NOT lowercase, normalize, trim, sanitize, coerce, or disclose them.';
 const canonicalPersistedMembershipPaymentStatusSemantics = 'Every persisted payment_status resolved from an active identity membership MUST be exactly one of paid, unpaid, trial, or internal. Missing, malformed, non-string, or alternate values MUST fail closed immediately after the membership row lock and before CLI session, tenant-quota, API-key, delivery-state, response, persistence-mutation, or COMMIT access; providers MUST NOT normalize, coerce, infer, or disclose them.';
 const canonicalPersistedApiKeyNameSemantics = 'Every persisted API-key name returned by active-key lookup MUST remain a non-empty NFC-normalized Unicode-scalar string without surrounding whitespace, Unicode C0/C1 control characters, Unicode line or paragraph separators, Unicode format or bidirectional controls, Unicode noncharacter code points, or Unicode private-use code points. Malformed or noncanonical persisted names MUST fail closed after the key row lock and before response emission or COMMIT; providers MUST NOT normalize, trim, sanitize, or disclose them.';
+const canonicalPersistedApiKeyIdSemantics = 'Every persisted API-key identifier resolved from an active key row or completed CLI session MUST already be an exact lowercase canonical RFC 4122 UUID. Malformed, uppercase, non-string, empty, or alternate identifiers MUST fail closed immediately after the relevant row lock and before key-activity evaluation, membership or entitlement access, response emission, persistence mutation, or COMMIT; providers MUST NOT lowercase, normalize, coerce, infer, or disclose them.';
 const activeLookupTransactionSemantics = 'API-key and entitlement lookup MUST row-lock the matching key in a serializable transaction before evaluating active, revocation, expiry, or current-scope state. Expiry MUST be evaluated with a non-transaction-start persistence wall clock after the lock and rechecked after response validation immediately before COMMIT; unknown, inactive, concurrently revoked, expired, or invalid-scope keys MUST fail closed without disclosure. Entitlement lookup MUST also row-lock the resolved organization entitlement before response validation.';
 const apiKeyResponseSchema = schemas.find(({ file }) => file.endsWith('identity-api-key-response.schema.json'))?.schema;
+const cliSessionAuthorizedSchema = schemas.find(({ file }) => file.endsWith('identity-cli-session-authorized.schema.json'))?.schema;
+if (apiKeyResponseSchema?.properties?.key_id?.description !== canonicalPersistedApiKeyIdSemantics ||
+    cliSessionAuthorizedSchema?.properties?.key_id?.description !== canonicalPersistedApiKeyIdSemantics ||
+    contracts.IdentityApiKeyResponseSchema.shape.key_id.description !== canonicalPersistedApiKeyIdSemantics ||
+    contracts.IdentityCliSessionAuthorizedSchema.shape.key_id.description !== canonicalPersistedApiKeyIdSemantics ||
+    contracts.IdentityApiKeyIdSchema.description !== canonicalPersistedApiKeyIdSemantics) {
+  throw new Error('identity contracts lack canonical persisted API-key identifier semantics');
+}
+for (const key_id of ['not-a-canonical-uuid', 'C433A3FA-1D07-4E56-BF30-B9019C7F1415']) {
+  const malformedKeyResponse = {
+    ...duplicateScopeResponse,
+    key_id,
+    scopes: ['simulation:run'],
+  };
+  requireInvalid('identity-api-key-response', malformedKeyResponse);
+  requireRuntimeInvalid(
+    contracts.IdentityApiKeyResponseSchema,
+    malformedKeyResponse,
+    'identity-api-key-response malformed persisted key id',
+  );
+  requireInvalid('identity-cli-session-authorized', {
+    success: true,
+    organization_id: organizationId,
+    key_id,
+  });
+  requireRuntimeInvalid(
+    contracts.IdentityCliSessionAuthorizedSchema,
+    { success: true, organization_id: organizationId, key_id },
+    'identity-cli-session-authorized malformed persisted key id',
+  );
+}
 if (apiKeyResponseSchema?.properties?.scopes?.description !== activeApiKeyScopeSemantics) {
   throw new Error('identity-api-key-response lacks active allowlist scope semantics');
 }

@@ -110,10 +110,14 @@ const IdentityMembershipPaymentStatusSchema = z.enum(['paid','unpaid','trial','i
   canonicalPersistedMembershipPaymentStatusSemantics
 );
 const canonicalPersistedApiKeyNameSemantics = 'Every persisted API-key name returned by active-key lookup MUST remain a non-empty NFC-normalized Unicode-scalar string without surrounding whitespace, Unicode C0/C1 control characters, Unicode line or paragraph separators, Unicode format or bidirectional controls, Unicode noncharacter code points, or Unicode private-use code points. Malformed or noncanonical persisted names MUST fail closed after the key row lock and before response emission or COMMIT; providers MUST NOT normalize, trim, sanitize, or disclose them.';
+const canonicalPersistedApiKeyIdSemantics = 'Every persisted API-key identifier resolved from an active key row or completed CLI session MUST already be an exact lowercase canonical RFC 4122 UUID. Malformed, uppercase, non-string, empty, or alternate identifiers MUST fail closed immediately after the relevant row lock and before key-activity evaluation, membership or entitlement access, response emission, persistence mutation, or COMMIT; providers MUST NOT lowercase, normalize, coerce, infer, or disclose them.';
+const IdentityApiKeyIdSchema = z.string().regex(
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/
+).describe(canonicalPersistedApiKeyIdSemantics);
 const activeApiKeyScopeSemantics = "An active API key response MUST contain a non-empty unique scope list that remains a subset of the provider's current allowlist; empty, malformed, duplicate, or retired scopes MUST fail closed and MUST NOT resolve as an active key.";
 const activeLookupTransactionSemantics = 'API-key and entitlement lookup MUST row-lock the matching key in a serializable transaction before evaluating active, revocation, expiry, or current-scope state. Expiry MUST be evaluated with a non-transaction-start persistence wall clock after the lock and rechecked after response validation immediately before COMMIT; unknown, inactive, concurrently revoked, expired, or invalid-scope keys MUST fail closed without disclosure. Entitlement lookup MUST also row-lock the resolved organization entitlement before response validation.';
 const IdentityApiKeyResponseSchema = z.object({
-  key_id: z.string().uuid(),
+  key_id: IdentityApiKeyIdSchema,
   organization_id: IdentityOrganizationIdSchema,
   name: z.string().min(1).max(255).refine(canonicalMetadataValue).describe(canonicalPersistedApiKeyNameSemantics),
   scopes: IdentityScopeListSchema.describe(activeApiKeyScopeSemantics),
@@ -183,7 +187,7 @@ const IdentityCliSessionAuthorizeSchema = z.object({
 const IdentityCliSessionAuthorizedSchema = z.object({
   success: z.literal(true),
   organization_id: IdentityOrganizationIdSchema,
-  key_id: z.string().uuid()
+  key_id: IdentityApiKeyIdSchema
 }).strict().describe(
   'When replaying a completed CLI session, the provider MUST require the same verified issuer and subject that originally authorized the session, then return key_id only after row-locking an active, unrevoked, unexpired API key owned by the same authenticated organization whose persisted scopes remain a non-empty unique subset of the current allowlist; missing or mismatched authorizing identity, cross-tenant, malformed, empty, duplicate, retired-scope, revoked, or expired key references MUST fail closed. ' + replayIdentityOrderSemantics + ' ' + authorizationReplayRequestSemantics + ' ' + authorizationReplayFinalKeyActivitySemantics + ' ' + apiKeyExpirySemantics + ' ' + authorizationPrecommitSemantics + ' ' + finalSessionExpirySemantics + ' ' + postWriteSessionExpirySemantics
 );
@@ -302,7 +306,7 @@ module.exports = {
   CANONICAL_SCHEMA_NAMES: Object.freeze(['ExecutionIntent','ExecutionGraph','CoreExecutionResult','EvidenceSummary','PolicyDecision','CostReference','ExecutionContext','ResultPacket','DataPlanePrincipal','IdentityApiKeyLookup','IdentityApiKeyResponse','IdentityEntitlementResponse','IdentityCliSessionCreate','IdentityCliSessionCreated','IdentityCliSessionAuthorize','IdentityCliSessionAuthorized','IdentityCliSessionPoll','SimulationEventsAppendRequest','SimulationEventsResponse','ResultIndexStoreRequest','ResultIndexResponse','ResultIndexListResponse','ResultIndexScenarioResponse','ResultIndexSummaryResponse','UsageLedgerEntryAppendRequest','UsageLedgerEntryResponse','UsageLedgerBalanceResponse','UsageLedgerReservationCreateRequest','UsageLedgerReservationActionRequest','UsageLedgerReservationResponse']),
   ExecutionIntentSchema,NodeType,GraphNodeSchema,GraphEdgeSchema,ExecutionGraphSchema,EvidenceEntrySchema,EvidenceSummarySchema,
   CostReferenceSchema,ResultStatus,CoreExecutionResultSchema,PolicyDecisionSchema,ExecutionContextSchema,ResultPacketSchema,
-  DataPlanePrincipalSchema,IdentityApiKeyLookupSchema,IdentityOrganizationIdSchema,IdentityMembershipEmailSchema,IdentityMembershipPaymentStatusSchema,IdentityApiKeyResponseSchema,IdentityEntitlementResponseSchema,
+  DataPlanePrincipalSchema,IdentityApiKeyLookupSchema,IdentityApiKeyIdSchema,IdentityOrganizationIdSchema,IdentityMembershipEmailSchema,IdentityMembershipPaymentStatusSchema,IdentityApiKeyResponseSchema,IdentityEntitlementResponseSchema,
   IdentityCliSessionCreateSchema,IdentityCliSessionCreatedSchema,IdentityCliSessionAuthorizeSchema,IdentityCliSessionAuthorizedSchema,IdentityCliSessionPollSchema,
   SimulationEventKind,SimulationEventAppendItemSchema,SimulationEventsAppendRequestSchema,SimulationEventSchema,SimulationEventsResponseSchema,
   ResultIndexLayerRecordSchema,ResultIndexExecutionProofSchema,ResultIndexExecutionMetadataSchema,ResultIndexExecutionContextSchema,ResultIndexSummarySchema,
@@ -461,6 +465,7 @@ module.exports.ExecutionContextSchema = module.exports.ExecutionContextSchema;
 module.exports.ResultPacketSchema = module.exports.ResultPacketSchema;
 module.exports.DataPlanePrincipalSchema = module.exports.DataPlanePrincipalSchema;
 module.exports.IdentityApiKeyLookupSchema = module.exports.IdentityApiKeyLookupSchema;
+module.exports.IdentityApiKeyIdSchema = module.exports.IdentityApiKeyIdSchema;
 module.exports.IdentityOrganizationIdSchema = module.exports.IdentityOrganizationIdSchema;
 module.exports.IdentityMembershipEmailSchema = module.exports.IdentityMembershipEmailSchema;
 module.exports.IdentityMembershipPaymentStatusSchema = module.exports.IdentityMembershipPaymentStatusSchema;
