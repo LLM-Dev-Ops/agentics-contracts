@@ -19,7 +19,22 @@
         "api_key": { "type": "string", "minLength": 1 },
         "email": { "type": "string", "format": "email" },
         "payment_status": { "enum": ["paid", "unpaid", "trial", "internal"] },
-        "organization_id": { "type": "string", "minLength": 1 },
+        "organization_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 255,
+          "description": "Every persisted organization_id resolved from an API key, entitlement, active membership, or completed CLI session MUST be a non-empty, at-most-255-character, exact NFC-normalized Unicode-scalar string without surrounding whitespace, Unicode C0/C1 control characters, Unicode line or paragraph separators, Unicode format or bidirectional controls, Unicode noncharacter code points, or Unicode private-use code points. Malformed or noncanonical organization identifiers from an API-key row MUST fail closed immediately after that row lock and before key activity evaluation or entitlement access. Malformed or noncanonical active-membership or completed-session organization identifiers MUST fail closed immediately after their row lock and before CLI session access, membership access, tenant-quota or API-key access, response emission, persistence mutation, or COMMIT; providers MUST NOT normalize, trim, sanitize, coerce, or disclose them.",
+          "x-unicode-normalization": "NFC",
+          "allOf": [
+            { "pattern": "^(?:[^\\uD800-\\uDFFF]|[\\uD800-\\uDBFF][\\uDC00-\\uDFFF])*$" },
+            { "pattern": "^[^\\u0000-\\u001F\\u007F-\\u009F]*$" },
+            { "pattern": "^(?!\\s)(?![\\s\\S]*\\s$)[\\s\\S]*$" },
+            { "pattern": "^(?![\\s\\S]*[\\u2028\\u2029])[\\s\\S]*$" },
+            { "pattern": "^(?![\\s\\S]*\\p{Cf})[\\s\\S]*$" },
+            { "pattern": "^(?![\\s\\S]*\\p{Noncharacter_Code_Point})[\\s\\S]*$" },
+            { "pattern": "^(?![\\s\\S]*\\p{Co})[\\s\\S]*$" }
+          ]
+        },
         "role": { "const": "owner" }
       }
     }

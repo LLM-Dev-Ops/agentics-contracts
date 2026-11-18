@@ -90,7 +90,7 @@ requireInvalid('identity-api-key-response', duplicateScopeResponse);
 requireRuntimeInvalid(contracts.IdentityApiKeyResponseSchema, duplicateScopeResponse, 'identity-api-key-response');
 const activeApiKeyScopeSemantics = "An active API key response MUST contain a non-empty unique scope list that remains a subset of the provider's current allowlist; empty, malformed, duplicate, or retired scopes MUST fail closed and MUST NOT resolve as an active key.";
 const canonicalIdentityScopeSemantics = 'Every configured, requested, and persisted identity scope MUST be a non-empty Unicode-scalar string already in exact NFKC normalization and MUST NOT contain Unicode White_Space property characters, Unicode C0/C1 control characters, Unicode General Category Cf format controls, Unicode noncharacter code points, Unicode private-use code points, Unicode variation selectors, Unicode default-ignorable code points, or Unicode combining marks. Canonically or compatibility-equivalent alternate spellings, whitespace-bearing values, control-bearing values, format-control-bearing values, noncharacter-bearing values, private-use-bearing values, variation-selector-bearing values, default-ignorable-bearing values, and combining-mark-bearing values MUST fail closed before identity verification, entitlement evaluation, API-key creation, response emission, or persistence access; providers MUST NOT normalize, trim, or sanitize caller, configuration, or persisted scope values.';
-const canonicalIdentityOrganizationSemantics = 'Every persisted organization_id resolved from an API key or entitlement MUST be a non-empty, at-most-255-character, exact NFC-normalized Unicode-scalar string without surrounding whitespace, Unicode C0/C1 control characters, Unicode line or paragraph separators, Unicode format or bidirectional controls, Unicode noncharacter code points, or Unicode private-use code points. Malformed or noncanonical persisted organization identifiers MUST fail closed immediately after the API-key row lock and before key activity evaluation, entitlement access, response emission, or COMMIT; providers MUST NOT normalize, trim, sanitize, coerce, or disclose them.';
+const canonicalIdentityOrganizationSemantics = 'Every persisted organization_id resolved from an API key, entitlement, active membership, or completed CLI session MUST be a non-empty, at-most-255-character, exact NFC-normalized Unicode-scalar string without surrounding whitespace, Unicode C0/C1 control characters, Unicode line or paragraph separators, Unicode format or bidirectional controls, Unicode noncharacter code points, or Unicode private-use code points. Malformed or noncanonical organization identifiers from an API-key row MUST fail closed immediately after that row lock and before key activity evaluation or entitlement access. Malformed or noncanonical active-membership or completed-session organization identifiers MUST fail closed immediately after their row lock and before CLI session access, membership access, tenant-quota or API-key access, response emission, persistence mutation, or COMMIT; providers MUST NOT normalize, trim, sanitize, coerce, or disclose them.';
 const canonicalPersistedApiKeyNameSemantics = 'Every persisted API-key name returned by active-key lookup MUST remain a non-empty NFC-normalized Unicode-scalar string without surrounding whitespace, Unicode C0/C1 control characters, Unicode line or paragraph separators, Unicode format or bidirectional controls, Unicode noncharacter code points, or Unicode private-use code points. Malformed or noncanonical persisted names MUST fail closed after the key row lock and before response emission or COMMIT; providers MUST NOT normalize, trim, sanitize, or disclose them.';
 const activeLookupTransactionSemantics = 'API-key and entitlement lookup MUST row-lock the matching key in a serializable transaction before evaluating active, revocation, expiry, or current-scope state. Expiry MUST be evaluated with a non-transaction-start persistence wall clock after the lock and rechecked after response validation immediately before COMMIT; unknown, inactive, concurrently revoked, expired, or invalid-scope keys MUST fail closed without disclosure. Entitlement lookup MUST also row-lock the resolved organization entitlement before response validation.';
 const apiKeyResponseSchema = schemas.find(({ file }) => file.endsWith('identity-api-key-response.schema.json'))?.schema;
@@ -379,6 +379,24 @@ if (authorizedAuthority?.description !== authorizationReplaySemantics) {
 }
 if (contracts.IdentityCliSessionAuthorizedSchema.description !== authorizationReplaySemantics) {
   throw new Error('identity-cli-session-authorized runtime validator drifted from tenant-bound replay semantics');
+}
+if (authorizedAuthority?.properties?.organization_id?.description !== canonicalIdentityOrganizationSemantics ||
+    authorizedAuthority?.properties?.organization_id?.['x-unicode-normalization'] !== 'NFC' ||
+    contracts.IdentityCliSessionAuthorizedSchema.shape.organization_id.description !== canonicalIdentityOrganizationSemantics) {
+  throw new Error('identity-cli-session-authorized lacks canonical persisted membership organization semantics');
+}
+for (const persistedOrganizationId of ['org\u0000admin', 'org\uD800admin', ' org-admin']) {
+  const malformedAuthorizationResponse = {
+    success: true,
+    organization_id: persistedOrganizationId,
+    key_id: '11111111-1111-4111-8111-111111111111',
+  };
+  requireInvalid('identity-cli-session-authorized', malformedAuthorizationResponse);
+  requireRuntimeInvalid(
+    contracts.IdentityCliSessionAuthorizedSchema,
+    malformedAuthorizationResponse,
+    'identity-cli-session-authorized malformed persisted organization',
+  );
 }
 const duplicateScopeCreate = {
   scopes: ['simulation:run', 'simulation:run'],
@@ -834,6 +852,21 @@ requireValid('identity-cli-session-poll', {
   status: 'completed', email: 'owner@example.com', payment_status: 'paid',
   organization_id: organizationId, role: 'owner', api_key: 'ag_live_one_time',
 });
+for (const persistedOrganizationId of ['org\u0000admin', 'org\uD800admin', ' org-admin']) {
+  const malformedPollResponse = {
+    status: 'completed',
+    email: 'owner@example.com',
+    payment_status: 'paid',
+    organization_id: persistedOrganizationId,
+    role: 'owner',
+  };
+  requireInvalid('identity-cli-session-poll', malformedPollResponse);
+  requireRuntimeInvalid(
+    contracts.IdentityCliSessionPollSchema,
+    malformedPollResponse,
+    'identity-cli-session-poll malformed persisted organization',
+  );
+}
 const deliveryBindingSemantics = 'A completed CLI session MUST deliver api_key only while the original authorizing membership remains active and bound to the same organization and the issued key remains active, unrevoked, unexpired, with persisted scopes that remain a non-empty unique subset of the current allowlist. Membership and key state MUST be row-locked in the same serializable delivery transaction. ' + uniqueDeliveryMembershipSemantics + ' ' + deliveryStateSemantics + ' ' + completedPollKeyActivitySemantics + ' ' + completedPollFinalKeyActivitySemantics + ' ' + apiKeyExpirySemantics + ' Malformed, empty, duplicate, or retired key scopes MUST fail closed before delivery or erasure. The encrypted delivery copy MUST be authenticated with associated data binding the session_code, organization_id, and key_id; swapping the ciphertext or any binding field between sessions MUST fail closed before plaintext delivery or erasure. The decrypted api_key MUST hash to the referenced active key_id before delivery or erasure. ' + deliveryPlaintextSemantics + ' ' + deliveryEnvelopePresenceSemantics + ' ' + canonicalDeliveryEnvelopeSemantics + ' ' + deliveryResponseSemantics + ' API-key delivery is one-time. ' + sessionExpirySemantics + ' ' + finalSessionExpirySemantics + ' ' + postWriteSessionExpirySemantics + ' ' + sessionEncryptionConfigurationSemantics;
 const pollAuthority = schemas.find(({ schema }) =>
   schema.$id === 'https://agentics.org/contracts/data-plane/v1/identity-cli-session-poll.schema.json'
@@ -843,6 +876,11 @@ if (pollAuthority?.oneOf?.[1]?.description !== deliveryBindingSemantics) {
 }
 if (contracts.IdentityCliSessionPollSchema.options?.[1]?.description !== deliveryBindingSemantics) {
   throw new Error('identity-cli-session-poll runtime validator drifted from delivery binding semantics');
+}
+if (pollAuthority?.oneOf?.[1]?.properties?.organization_id?.description !== canonicalIdentityOrganizationSemantics ||
+    pollAuthority?.oneOf?.[1]?.properties?.organization_id?.['x-unicode-normalization'] !== 'NFC' ||
+    contracts.IdentityCliSessionPollSchema.options?.[1]?.shape?.organization_id?.description !== canonicalIdentityOrganizationSemantics) {
+  throw new Error('identity-cli-session-poll lacks canonical persisted session organization semantics');
 }
 
 console.log(`validated ${files.length} authoritative schemas`);
