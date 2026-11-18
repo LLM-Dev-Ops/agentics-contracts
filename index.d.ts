@@ -28,6 +28,8 @@ export interface IdentityApiKeyLookup { key_hash:string }
 export const IdentityApiKeyLookupSchema: z.ZodType<IdentityApiKeyLookup>;
 export const IdentityOrganizationIdSchema: z.ZodType<string>;
 export const IdentityMembershipEmailSchema: z.ZodType<string>;
+export type IdentityMembershipPaymentStatus = 'paid'|'unpaid'|'trial'|'internal';
+export const IdentityMembershipPaymentStatusSchema: z.ZodType<IdentityMembershipPaymentStatus>;
 export interface IdentityApiKeyResponse { key_id:string;organization_id:string;name:string;scopes:string[];created_at:string;expires_at:string|null;last_used_at:string|null }
 export const IdentityApiKeyResponseSchema: z.ZodType<IdentityApiKeyResponse>;
 export interface IdentityEntitlementResponse { organization_id:string;plan:'free'|'developer'|'team'|'enterprise';max_requests:number;max_tokens:number;max_api_keys:number }

@@ -105,6 +105,10 @@ const IdentityMembershipEmailSchema = z.string().min(1).max(320).email().refine(
   (value) => value.toLowerCase() === value,
   { message: 'Persisted membership emails must already be lowercase' }
 ).describe(canonicalPersistedMembershipEmailSemantics);
+const canonicalPersistedMembershipPaymentStatusSemantics = 'Every persisted payment_status resolved from an active identity membership MUST be exactly one of paid, unpaid, trial, or internal. Missing, malformed, non-string, or alternate values MUST fail closed immediately after the membership row lock and before CLI session, tenant-quota, API-key, delivery-state, response, persistence-mutation, or COMMIT access; providers MUST NOT normalize, coerce, infer, or disclose them.';
+const IdentityMembershipPaymentStatusSchema = z.enum(['paid','unpaid','trial','internal']).describe(
+  canonicalPersistedMembershipPaymentStatusSemantics
+);
 const canonicalPersistedApiKeyNameSemantics = 'Every persisted API-key name returned by active-key lookup MUST remain a non-empty NFC-normalized Unicode-scalar string without surrounding whitespace, Unicode C0/C1 control characters, Unicode line or paragraph separators, Unicode format or bidirectional controls, Unicode noncharacter code points, or Unicode private-use code points. Malformed or noncanonical persisted names MUST fail closed after the key row lock and before response emission or COMMIT; providers MUST NOT normalize, trim, sanitize, or disclose them.';
 const activeApiKeyScopeSemantics = "An active API key response MUST contain a non-empty unique scope list that remains a subset of the provider's current allowlist; empty, malformed, duplicate, or retired scopes MUST fail closed and MUST NOT resolve as an active key.";
 const activeLookupTransactionSemantics = 'API-key and entitlement lookup MUST row-lock the matching key in a serializable transaction before evaluating active, revocation, expiry, or current-scope state. Expiry MUST be evaluated with a non-transaction-start persistence wall clock after the lock and rechecked after response validation immediately before COMMIT; unknown, inactive, concurrently revoked, expired, or invalid-scope keys MUST fail closed without disclosure. Entitlement lookup MUST also row-lock the resolved organization entitlement before response validation.';
@@ -189,7 +193,7 @@ const IdentityCliSessionPollSchema = z.union([
     status: z.literal('completed'),
     api_key: z.string().min(1).optional(),
     email: IdentityMembershipEmailSchema,
-    payment_status: z.enum(['paid','unpaid','trial','internal']),
+    payment_status: IdentityMembershipPaymentStatusSchema,
     organization_id: IdentityOrganizationIdSchema,
     role: z.literal('owner')
   }).strict().describe(
@@ -298,7 +302,7 @@ module.exports = {
   CANONICAL_SCHEMA_NAMES: Object.freeze(['ExecutionIntent','ExecutionGraph','CoreExecutionResult','EvidenceSummary','PolicyDecision','CostReference','ExecutionContext','ResultPacket','DataPlanePrincipal','IdentityApiKeyLookup','IdentityApiKeyResponse','IdentityEntitlementResponse','IdentityCliSessionCreate','IdentityCliSessionCreated','IdentityCliSessionAuthorize','IdentityCliSessionAuthorized','IdentityCliSessionPoll','SimulationEventsAppendRequest','SimulationEventsResponse','ResultIndexStoreRequest','ResultIndexResponse','ResultIndexListResponse','ResultIndexScenarioResponse','ResultIndexSummaryResponse','UsageLedgerEntryAppendRequest','UsageLedgerEntryResponse','UsageLedgerBalanceResponse','UsageLedgerReservationCreateRequest','UsageLedgerReservationActionRequest','UsageLedgerReservationResponse']),
   ExecutionIntentSchema,NodeType,GraphNodeSchema,GraphEdgeSchema,ExecutionGraphSchema,EvidenceEntrySchema,EvidenceSummarySchema,
   CostReferenceSchema,ResultStatus,CoreExecutionResultSchema,PolicyDecisionSchema,ExecutionContextSchema,ResultPacketSchema,
-  DataPlanePrincipalSchema,IdentityApiKeyLookupSchema,IdentityOrganizationIdSchema,IdentityMembershipEmailSchema,IdentityApiKeyResponseSchema,IdentityEntitlementResponseSchema,
+  DataPlanePrincipalSchema,IdentityApiKeyLookupSchema,IdentityOrganizationIdSchema,IdentityMembershipEmailSchema,IdentityMembershipPaymentStatusSchema,IdentityApiKeyResponseSchema,IdentityEntitlementResponseSchema,
   IdentityCliSessionCreateSchema,IdentityCliSessionCreatedSchema,IdentityCliSessionAuthorizeSchema,IdentityCliSessionAuthorizedSchema,IdentityCliSessionPollSchema,
   SimulationEventKind,SimulationEventAppendItemSchema,SimulationEventsAppendRequestSchema,SimulationEventSchema,SimulationEventsResponseSchema,
   ResultIndexLayerRecordSchema,ResultIndexExecutionProofSchema,ResultIndexExecutionMetadataSchema,ResultIndexExecutionContextSchema,ResultIndexSummarySchema,
@@ -459,6 +463,7 @@ module.exports.DataPlanePrincipalSchema = module.exports.DataPlanePrincipalSchem
 module.exports.IdentityApiKeyLookupSchema = module.exports.IdentityApiKeyLookupSchema;
 module.exports.IdentityOrganizationIdSchema = module.exports.IdentityOrganizationIdSchema;
 module.exports.IdentityMembershipEmailSchema = module.exports.IdentityMembershipEmailSchema;
+module.exports.IdentityMembershipPaymentStatusSchema = module.exports.IdentityMembershipPaymentStatusSchema;
 module.exports.IdentityApiKeyResponseSchema = module.exports.IdentityApiKeyResponseSchema;
 module.exports.IdentityEntitlementResponseSchema = module.exports.IdentityEntitlementResponseSchema;
 module.exports.IdentityCliSessionCreateSchema = module.exports.IdentityCliSessionCreateSchema;

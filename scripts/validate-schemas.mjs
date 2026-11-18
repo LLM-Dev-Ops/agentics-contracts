@@ -92,6 +92,7 @@ const activeApiKeyScopeSemantics = "An active API key response MUST contain a no
 const canonicalIdentityScopeSemantics = 'Every configured, requested, and persisted identity scope MUST be a non-empty Unicode-scalar string already in exact NFKC normalization and MUST NOT contain Unicode White_Space property characters, Unicode C0/C1 control characters, Unicode General Category Cf format controls, Unicode noncharacter code points, Unicode private-use code points, Unicode variation selectors, Unicode default-ignorable code points, or Unicode combining marks. Canonically or compatibility-equivalent alternate spellings, whitespace-bearing values, control-bearing values, format-control-bearing values, noncharacter-bearing values, private-use-bearing values, variation-selector-bearing values, default-ignorable-bearing values, and combining-mark-bearing values MUST fail closed before identity verification, entitlement evaluation, API-key creation, response emission, or persistence access; providers MUST NOT normalize, trim, or sanitize caller, configuration, or persisted scope values.';
 const canonicalIdentityOrganizationSemantics = 'Every persisted organization_id resolved from an API key, entitlement, active membership, or completed CLI session MUST be a non-empty, at-most-255-character, exact NFC-normalized Unicode-scalar string without surrounding whitespace, Unicode C0/C1 control characters, Unicode line or paragraph separators, Unicode format or bidirectional controls, Unicode noncharacter code points, or Unicode private-use code points. Malformed or noncanonical organization identifiers from an API-key row MUST fail closed immediately after that row lock and before key activity evaluation or entitlement access. Malformed or noncanonical active-membership or completed-session organization identifiers MUST fail closed immediately after their row lock and before CLI session access, membership access, tenant-quota or API-key access, response emission, persistence mutation, or COMMIT; providers MUST NOT normalize, trim, sanitize, coerce, or disclose them.';
 const canonicalPersistedMembershipEmailSemantics = 'Every persisted email resolved from an active identity membership MUST be a valid non-empty, at-most-320-character, exact lowercase NFC-normalized Unicode-scalar email string without surrounding whitespace, Unicode C0/C1 control characters, Unicode line or paragraph separators, Unicode format or bidirectional controls, Unicode noncharacter code points, or Unicode private-use code points. Malformed or noncanonical membership email values MUST fail closed immediately after the membership row lock and before CLI session, tenant-quota, API-key, delivery-state, response, persistence-mutation, or COMMIT access; providers MUST NOT lowercase, normalize, trim, sanitize, coerce, or disclose them.';
+const canonicalPersistedMembershipPaymentStatusSemantics = 'Every persisted payment_status resolved from an active identity membership MUST be exactly one of paid, unpaid, trial, or internal. Missing, malformed, non-string, or alternate values MUST fail closed immediately after the membership row lock and before CLI session, tenant-quota, API-key, delivery-state, response, persistence-mutation, or COMMIT access; providers MUST NOT normalize, coerce, infer, or disclose them.';
 const canonicalPersistedApiKeyNameSemantics = 'Every persisted API-key name returned by active-key lookup MUST remain a non-empty NFC-normalized Unicode-scalar string without surrounding whitespace, Unicode C0/C1 control characters, Unicode line or paragraph separators, Unicode format or bidirectional controls, Unicode noncharacter code points, or Unicode private-use code points. Malformed or noncanonical persisted names MUST fail closed after the key row lock and before response emission or COMMIT; providers MUST NOT normalize, trim, sanitize, or disclose them.';
 const activeLookupTransactionSemantics = 'API-key and entitlement lookup MUST row-lock the matching key in a serializable transaction before evaluating active, revocation, expiry, or current-scope state. Expiry MUST be evaluated with a non-transaction-start persistence wall clock after the lock and rechecked after response validation immediately before COMMIT; unknown, inactive, concurrently revoked, expired, or invalid-scope keys MUST fail closed without disclosure. Entitlement lookup MUST also row-lock the resolved organization entitlement before response validation.';
 const apiKeyResponseSchema = schemas.find(({ file }) => file.endsWith('identity-api-key-response.schema.json'))?.schema;
@@ -374,6 +375,10 @@ if (contracts.IdentityCliSessionAuthorizeSchema.description !== ownerAuthorizati
 if (authorizeAuthority?.['x-persisted-membership-email'] !== canonicalPersistedMembershipEmailSemantics ||
     contracts.IdentityMembershipEmailSchema.description !== canonicalPersistedMembershipEmailSemantics) {
   throw new Error('identity-cli-session-authorize lacks canonical persisted membership email semantics');
+}
+if (authorizeAuthority?.['x-persisted-membership-payment-status'] !== canonicalPersistedMembershipPaymentStatusSemantics ||
+    contracts.IdentityMembershipPaymentStatusSchema.description !== canonicalPersistedMembershipPaymentStatusSemantics) {
+  throw new Error('identity-cli-session-authorize lacks canonical persisted membership payment-status semantics');
 }
 const authorizationReplaySemantics = 'When replaying a completed CLI session, the provider MUST require the same verified issuer and subject that originally authorized the session, then return key_id only after row-locking an active, unrevoked, unexpired API key owned by the same authenticated organization whose persisted scopes remain a non-empty unique subset of the current allowlist; missing or mismatched authorizing identity, cross-tenant, malformed, empty, duplicate, retired-scope, revoked, or expired key references MUST fail closed. ' + replayIdentityOrderSemantics + ' ' + authorizationReplayRequestSemantics + ' ' + authorizationReplayFinalKeyActivitySemantics + ' ' + apiKeyExpirySemantics + ' ' + authorizationPrecommitSemantics + ' ' + finalSessionExpirySemantics + ' ' + postWriteSessionExpirySemantics;
 const authorizedAuthority = schemas.find(({ schema }) =>
@@ -872,6 +877,21 @@ for (const persistedMembershipEmail of ['Owner@example.com', 'owner@example.com 
     'identity-cli-session-poll malformed persisted membership email',
   );
 }
+for (const persistedPaymentStatus of ['overdue', '', 1, null]) {
+  const malformedPollResponse = {
+    status: 'completed',
+    email: 'owner@example.com',
+    payment_status: persistedPaymentStatus,
+    organization_id: organizationId,
+    role: 'owner',
+  };
+  requireInvalid('identity-cli-session-poll', malformedPollResponse);
+  requireRuntimeInvalid(
+    contracts.IdentityCliSessionPollSchema,
+    malformedPollResponse,
+    'identity-cli-session-poll malformed persisted membership payment status',
+  );
+}
 for (const persistedOrganizationId of ['org\u0000admin', 'org\uD800admin', ' org-admin']) {
   const malformedPollResponse = {
     status: 'completed',
@@ -907,6 +927,11 @@ if (pollAuthority?.['x-persisted-membership-email'] !== canonicalPersistedMember
     pollAuthority?.oneOf?.[1]?.properties?.email?.['x-unicode-normalization'] !== 'NFC' ||
     contracts.IdentityCliSessionPollSchema.options?.[1]?.shape?.email?.description !== canonicalPersistedMembershipEmailSemantics) {
   throw new Error('identity-cli-session-poll lacks canonical persisted membership email semantics');
+}
+if (pollAuthority?.['x-persisted-membership-payment-status'] !== canonicalPersistedMembershipPaymentStatusSemantics ||
+    pollAuthority?.oneOf?.[1]?.properties?.payment_status?.description !== canonicalPersistedMembershipPaymentStatusSemantics ||
+    contracts.IdentityCliSessionPollSchema.options?.[1]?.shape?.payment_status?.description !== canonicalPersistedMembershipPaymentStatusSemantics) {
+  throw new Error('identity-cli-session-poll lacks canonical persisted membership payment-status semantics');
 }
 
 console.log(`validated ${files.length} authoritative schemas`);
