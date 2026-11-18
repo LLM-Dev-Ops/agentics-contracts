@@ -358,10 +358,14 @@ requireRuntimeInvalid(
   'identity-entitlement-response non-NFC persisted organization',
 );
 const entitlementActiveKeySemantics = "Entitlement lookup MUST resolve only for an active, unrevoked, unexpired API key whose persisted scopes remain a non-empty unique subset of the provider's current allowlist. Empty, malformed, duplicate, unsupported, or retired scopes MUST fail closed with the same non-disclosing response as an unknown or inactive key.";
+const entitlementTenantBindingSemantics = "The row-locked entitlement organization_id MUST exactly equal the canonical organization_id of the row-locked active API key used to authorize the lookup. A missing, malformed, non-string, noncanonical, or mismatched entitlement tenant binding MUST fail closed immediately after the entitlement row lock and before plan or limit evaluation, active-key revalidation, response emission, or COMMIT; providers MUST NOT normalize, substitute, infer, or disclose a different tenant binding.";
 if (entitlementAuthority?.description !== entitlementActiveKeySemantics + ' ' + activeLookupTransactionSemantics) {
   throw new Error('identity-entitlement-response lacks active-key scope binding semantics');
 }
-if (contracts.IdentityEntitlementResponseSchema.description !== entitlementActiveKeySemantics + ' ' + activeLookupTransactionSemantics) {
+if (entitlementAuthority?.['x-entitlement-tenant-binding'] !== entitlementTenantBindingSemantics) {
+  throw new Error('identity-entitlement-response lacks exact entitlement tenant-binding semantics');
+}
+if (contracts.IdentityEntitlementResponseSchema.description !== entitlementActiveKeySemantics + ' ' + activeLookupTransactionSemantics + ' ' + entitlementTenantBindingSemantics) {
   throw new Error('identity-entitlement-response runtime validator drifted from active-key scope binding semantics');
 }
 for (const field of ['max_requests', 'max_tokens']) {
