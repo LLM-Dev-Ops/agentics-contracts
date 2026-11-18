@@ -1,0 +1,34 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://agentics.org/contracts/data-plane/v1/identity-cli-session-authorized.schema.json",
+  "title": "CLI session authorization response",
+  "description": "When replaying a completed CLI session, the provider MUST require the same verified issuer and subject that originally authorized the session, then return key_id only after row-locking an active, unrevoked, unexpired API key owned by the same authenticated organization whose persisted scopes remain a non-empty unique subset of the current allowlist; missing or mismatched authorizing identity, cross-tenant, malformed, empty, duplicate, retired-scope, revoked, or expired key references MUST fail closed. Completed-session replay MUST compare the persisted authorizing issuer, subject, and organization to the verified active membership immediately after the session row lock and before evaluating session expiry or accessing the referenced API key; a mismatch MUST fail closed without disclosing session expiry or key state. A completed authorization replay that supplies key_name or scopes MUST match the row-locked referenced key; scopes are compared as an unordered unique set. Any conflicting replay MUST fail closed before the success response, while omitted optional fields remain idempotent. After constructing and validating a completed authorization replay response, the provider MUST re-evaluate the row-locked referenced key with a non-transaction-start persistence wall clock immediately before COMMIT. A key that expires before commit MUST prevent the replay response and roll back the transaction. API-key expiry MUST be evaluated after the referenced key row lock is acquired, using a non-transaction-start persistence wall clock in the same serializable transaction; transaction-start timestamps and service-process clock comparisons are forbidden. Before inserting an API key or completing a CLI session, the provider MUST validate both the complete authorization response and the prospective completed-poll delivery response against their authorities using the row-locked membership and generated key data; validation failure MUST roll back without key insertion or session mutation. After acquiring every relevant blocking membership, session, tenant-quota, and referenced-key lock, the provider MUST re-evaluate session expiry with a non-transaction-start persistence wall clock immediately before authorization commit, replay response, plaintext delivery, or delivery-copy erasure; expiry MUST roll back without key insertion, session mutation, disclosure, or erasure. After response validation and any provisional API-key insertion, session completion, or delivery-copy erasure, the provider MUST re-evaluate session expiry with a non-transaction-start persistence wall clock immediately before COMMIT; expiry MUST roll back every provisional change and prevent response or plaintext disclosure. A check performed only before those writes is insufficient.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["success", "organization_id", "key_id"],
+  "properties": {
+    "success": { "const": true },
+    "organization_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 255,
+      "description": "Every persisted organization_id resolved from an API key, entitlement, active membership, or completed CLI session MUST be a non-empty, at-most-255-character, exact NFC-normalized Unicode-scalar string without surrounding whitespace, Unicode C0/C1 control characters, Unicode line or paragraph separators, Unicode format or bidirectional controls, Unicode noncharacter code points, or Unicode private-use code points. Malformed or noncanonical organization identifiers from an API-key row MUST fail closed immediately after that row lock and before key activity evaluation or entitlement access. Malformed or noncanonical active-membership or completed-session organization identifiers MUST fail closed immediately after their row lock and before CLI session access, membership access, tenant-quota or API-key access, response emission, persistence mutation, or COMMIT; providers MUST NOT normalize, trim, sanitize, coerce, or disclose them.",
+      "x-unicode-normalization": "NFC",
+      "allOf": [
+        { "pattern": "^(?:[^\\uD800-\\uDFFF]|[\\uD800-\\uDBFF][\\uDC00-\\uDFFF])*$" },
+        { "pattern": "^[^\\u0000-\\u001F\\u007F-\\u009F]*$" },
+        { "pattern": "^(?!\\s)(?![\\s\\S]*\\s$)[\\s\\S]*$" },
+        { "pattern": "^(?![\\s\\S]*[\\u2028\\u2029])[\\s\\S]*$" },
+        { "pattern": "^(?![\\s\\S]*\\p{Cf})[\\s\\S]*$" },
+        { "pattern": "^(?![\\s\\S]*\\p{Noncharacter_Code_Point})[\\s\\S]*$" },
+        { "pattern": "^(?![\\s\\S]*\\p{Co})[\\s\\S]*$" }
+      ]
+    },
+    "key_id": {
+      "type": "string",
+      "format": "uuid",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+      "description": "Every persisted API-key identifier resolved from an active key row or completed CLI session MUST already be an exact lowercase canonical RFC 4122 UUID. Malformed, uppercase, non-string, empty, or alternate identifiers MUST fail closed immediately after the relevant row lock and before key-activity evaluation, membership or entitlement access, response emission, persistence mutation, or COMMIT; providers MUST NOT lowercase, normalize, coerce, infer, or disclose them."
+    }
+  }
+}

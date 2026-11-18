@@ -1,0 +1,59 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://agentics.org/contracts/data-plane/v1/identity-api-key-response.schema.json",
+  "title": "Tenant-bound API key lookup response",
+  "description": "API-key and entitlement lookup MUST row-lock the matching key in a serializable transaction before evaluating active, revocation, expiry, or current-scope state. Expiry MUST be evaluated with a non-transaction-start persistence wall clock after the lock and rechecked after response validation immediately before COMMIT; unknown, inactive, concurrently revoked, expired, or invalid-scope keys MUST fail closed without disclosure. Entitlement lookup MUST also row-lock the resolved organization entitlement before response validation.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["key_id", "organization_id", "name", "scopes", "created_at", "expires_at", "last_used_at"],
+  "properties": {
+    "key_id": {
+      "type": "string",
+      "format": "uuid",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+      "description": "Every persisted API-key identifier resolved from an active key row or completed CLI session MUST already be an exact lowercase canonical RFC 4122 UUID. Malformed, uppercase, non-string, empty, or alternate identifiers MUST fail closed immediately after the relevant row lock and before key-activity evaluation, membership or entitlement access, response emission, persistence mutation, or COMMIT; providers MUST NOT lowercase, normalize, coerce, infer, or disclose them."
+    },
+    "organization_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 255,
+      "description": "Every persisted organization_id resolved from an API key, entitlement, active membership, or completed CLI session MUST be a non-empty, at-most-255-character, exact NFC-normalized Unicode-scalar string without surrounding whitespace, Unicode C0/C1 control characters, Unicode line or paragraph separators, Unicode format or bidirectional controls, Unicode noncharacter code points, or Unicode private-use code points. Malformed or noncanonical organization identifiers from an API-key row MUST fail closed immediately after that row lock and before key activity evaluation or entitlement access. Malformed or noncanonical active-membership or completed-session organization identifiers MUST fail closed immediately after their row lock and before CLI session access, membership access, tenant-quota or API-key access, response emission, persistence mutation, or COMMIT; providers MUST NOT normalize, trim, sanitize, coerce, or disclose them.",
+      "x-unicode-normalization": "NFC",
+      "allOf": [
+        { "pattern": "^(?:[^\\uD800-\\uDFFF]|[\\uD800-\\uDBFF][\\uDC00-\\uDFFF])*$" },
+        { "pattern": "^[^\\u0000-\\u001F\\u007F-\\u009F]*$" },
+        { "pattern": "^(?!\\s)(?![\\s\\S]*\\s$)[\\s\\S]*$" },
+        { "pattern": "^(?![\\s\\S]*[\\u2028\\u2029])[\\s\\S]*$" },
+        { "pattern": "^(?![\\s\\S]*\\p{Cf})[\\s\\S]*$" },
+        { "pattern": "^(?![\\s\\S]*\\p{Noncharacter_Code_Point})[\\s\\S]*$" },
+        { "pattern": "^(?![\\s\\S]*\\p{Co})[\\s\\S]*$" }
+      ]
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 255,
+      "description": "Every persisted API-key name resolved from an active API-key row MUST already be a non-empty, at-most-255-character, exact NFC-normalized Unicode-scalar string without surrounding whitespace, Unicode C0/C1 control characters, Unicode line or paragraph separators, Unicode format or bidirectional controls, Unicode noncharacter code points, or Unicode private-use code points. Missing, malformed, non-string, or noncanonical names MUST fail closed immediately after the key row lock and before key activity evaluation, replay or delivery response emission, persistence mutation, or COMMIT; providers MUST NOT normalize, trim, sanitize, coerce, infer, or disclose persisted key names.",
+      "x-unicode-normalization": "NFC",
+      "allOf": [
+        { "pattern": "^(?:[^\\uD800-\\uDFFF]|[\\uD800-\\uDBFF][\\uDC00-\\uDFFF])*$" },
+        { "pattern": "^[^\\u0000-\\u001F\\u007F-\\u009F]*$" },
+        { "pattern": "^(?!\\s)(?![\\s\\S]*\\s$)[\\s\\S]*$" },
+        { "pattern": "^(?![\\s\\S]*[\\u2028\\u2029])[\\s\\S]*$" },
+        { "pattern": "^(?![\\s\\S]*\\p{Cf})[\\s\\S]*$" },
+        { "pattern": "^(?![\\s\\S]*\\p{Noncharacter_Code_Point})[\\s\\S]*$" },
+        { "pattern": "^(?![\\s\\S]*\\p{Co})[\\s\\S]*$" }
+      ]
+    },
+    "scopes": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1, "description": "Every configured, requested, and persisted identity scope MUST be a non-empty Unicode-scalar string already in exact NFKC normalization and MUST NOT contain Unicode White_Space property characters, Unicode C0/C1 control characters, Unicode General Category Cf format controls, Unicode noncharacter code points, Unicode private-use code points, Unicode variation selectors, Unicode default-ignorable code points, or Unicode combining marks. Canonically or compatibility-equivalent alternate spellings, whitespace-bearing values, control-bearing values, format-control-bearing values, noncharacter-bearing values, private-use-bearing values, variation-selector-bearing values, default-ignorable-bearing values, and combining-mark-bearing values MUST fail closed before identity verification, entitlement evaluation, API-key creation, response emission, or persistence access; providers MUST NOT normalize, trim, or sanitize caller, configuration, or persisted scope values.", "x-unicode-normalization": "NFKC", "allOf": [{ "pattern": "^(?:[^\\uD800-\\uDFFF]|[\\uD800-\\uDBFF][\\uDC00-\\uDFFF])*$" }, { "pattern": "^[^\\u0000-\\u001F\\u007F-\\u009F]*$" }, { "pattern": "^(?![\\s\\S]*\\p{White_Space})[\\s\\S]*$" }, { "pattern": "^(?![\\s\\S]*\\p{Cf})[\\s\\S]*$" }, { "pattern": "^(?![\\s\\S]*\\p{Noncharacter_Code_Point})[\\s\\S]*$" }, { "pattern": "^(?![\\s\\S]*\\p{Co})[\\s\\S]*$" }, { "pattern": "^(?![\\s\\S]*\\p{Variation_Selector})[\\s\\S]*$" }, { "pattern": "^(?![\\s\\S]*\\p{Default_Ignorable_Code_Point})[\\s\\S]*$" }, { "pattern": "^(?![\\s\\S]*\\p{M})[\\s\\S]*$" }] },
+      "minItems": 1,
+      "uniqueItems": true,
+      "description": "An active API key response MUST contain a non-empty unique scope list that remains a subset of the provider's current allowlist; empty, malformed, duplicate, or retired scopes MUST fail closed and MUST NOT resolve as an active key."
+    },
+    "created_at": { "type": "string", "format": "date-time" },
+    "expires_at": { "type": ["string", "null"], "format": "date-time" },
+    "last_used_at": { "type": ["string", "null"], "format": "date-time" }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://agentics.org/contracts/data-plane/v1/identity-api-key-lookup.schema.json",
+  "title": "IAM-authenticated API key lookup request",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["key_hash"],
+  "properties": {
+    "key_hash": { "type": "string", "pattern": "^[a-f0-9]{64}$", "description": "Every persisted API-key hash resolved from an active API-key row MUST already be exactly 64 lowercase ASCII hexadecimal characters. Missing, malformed, non-string, uppercase, whitespace-padded, or alternate values MUST fail closed immediately after the key row lock and before key activity evaluation, replay or delivery response emission, persistence mutation, or COMMIT; providers MUST NOT lowercase, normalize, trim, coerce, infer, or disclose persisted key hashes." }
+  }
+}

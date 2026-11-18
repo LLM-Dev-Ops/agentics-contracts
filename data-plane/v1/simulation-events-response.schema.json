@@ -1,0 +1,30 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://agentics.org/contracts/data-plane/v1/simulation-events-response.schema.json",
+  "title": "Simulation Events Response",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["organization_id", "replayed", "events"],
+  "properties": {
+    "organization_id": { "type": "string", "minLength": 1 },
+    "replayed": { "type": "boolean" },
+    "events": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "simulation_id", "seq", "ts", "kind", "payload"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^[0-9]+$" },
+          "simulation_id": { "type": "string", "format": "uuid" },
+          "seq": { "type": "integer", "minimum": 1 },
+          "ts": { "type": "string", "format": "date-time" },
+          "kind": {
+            "enum": ["created", "started", "step_started", "step_completed", "log", "metric", "artifact", "validation", "completed", "failed", "cancelled"]
+          },
+          "payload": {}
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,35 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://agentics.org/contracts/data-plane/v1/result-index-summary-response.schema.json",
+  "title": "Tenant-bound result index summary response",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["organization_id", "summary"],
+  "properties": {
+    "organization_id": { "type": "string", "minLength": 1 },
+    "summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["environment", "period", "total_runs", "successful", "failed", "success_rate", "avg_duration_ms", "last_run_at"],
+      "properties": {
+        "environment": { "type": "string", "minLength": 1, "maxLength": 255 },
+        "period": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["name", "since", "until"],
+          "properties": {
+            "name": { "enum": ["24h", "7d", "30d"] },
+            "since": { "type": "string", "format": "date-time" },
+            "until": { "type": "string", "format": "date-time" }
+          }
+        },
+        "total_runs": { "type": "integer", "minimum": 0 },
+        "successful": { "type": "integer", "minimum": 0 },
+        "failed": { "type": "integer", "minimum": 0 },
+        "success_rate": { "type": "number", "minimum": 0, "maximum": 1 },
+        "avg_duration_ms": { "type": ["number", "null"], "minimum": 0 },
+        "last_run_at": { "type": ["string", "null"], "format": "date-time" }
+      }
+    }
+  }
+}
