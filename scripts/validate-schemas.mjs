@@ -96,12 +96,31 @@ const canonicalPersistedMembershipPaymentStatusSemantics = 'Every persisted paym
 const canonicalPersistedMembershipRoleSemantics = 'Every persisted role resolved from an active identity membership MUST be exactly owner. Missing, malformed, non-string, or alternate values MUST fail closed immediately after the membership row lock and before CLI session, tenant-quota, API-key, delivery-state, response, persistence-mutation, or COMMIT access; providers MUST NOT normalize, coerce, infer, or disclose them.';
 const canonicalPersistedApiKeyNameSemantics = 'Every persisted API-key name returned by active-key lookup MUST remain a non-empty NFC-normalized Unicode-scalar string without surrounding whitespace, Unicode C0/C1 control characters, Unicode line or paragraph separators, Unicode format or bidirectional controls, Unicode noncharacter code points, or Unicode private-use code points. Malformed or noncanonical persisted names MUST fail closed after the key row lock and before response emission or COMMIT; providers MUST NOT normalize, trim, sanitize, or disclose them.';
 const canonicalPersistedApiKeyIdSemantics = 'Every persisted API-key identifier resolved from an active key row or completed CLI session MUST already be an exact lowercase canonical RFC 4122 UUID. Malformed, uppercase, non-string, empty, or alternate identifiers MUST fail closed immediately after the relevant row lock and before key-activity evaluation, membership or entitlement access, response emission, persistence mutation, or COMMIT; providers MUST NOT lowercase, normalize, coerce, infer, or disclose them.';
+const canonicalPersistedApiKeyHashSemantics = 'Every persisted API-key hash resolved from an active API-key row MUST already be exactly 64 lowercase ASCII hexadecimal characters. Missing, malformed, non-string, uppercase, whitespace-padded, or alternate values MUST fail closed immediately after the key row lock and before key activity evaluation, replay or delivery response emission, persistence mutation, or COMMIT; providers MUST NOT lowercase, normalize, trim, coerce, infer, or disclose persisted key hashes.';
 const canonicalPersistedCliSessionStatusSemantics = 'Every persisted CLI session status resolved for authorization or polling MUST be exactly pending or completed. Missing, malformed, non-string, or alternate values MUST fail closed immediately after the session row lock and before session-expiry evaluation, tenant-quota, membership, API-key, delivery-state, response, persistence-mutation, or COMMIT access; providers MUST NOT normalize, coerce, infer, or disclose them.';
 const canonicalPersistedCliSessionCodeSemantics = 'Every persisted CLI session_code resolved from a row lock MUST already be exactly eight uppercase ASCII letters or digits. Missing, malformed, non-string, lowercase, whitespace-padded, or alternate values MUST fail closed immediately after the session row lock and before status, session-expiry, membership, API-key, delivery-state, response, persistence-mutation, or COMMIT access; providers MUST NOT uppercase, normalize, trim, coerce, infer, or disclose persisted session codes.';
 const canonicalPersistedCliAuthorizingIdentitySemantics = 'Every completed CLI session authorized_issuer MUST be the exact configured canonical HTTPS end-user JWT issuer and authorized_subject MUST be a non-empty Unicode-scalar string without surrounding whitespace. Missing, malformed, non-string, whitespace-padded, noncanonical, or configuration-mismatched values MUST fail closed immediately after the session row lock and before session-expiry evaluation, membership, API-key, delivery-state, response, persistence-mutation, or COMMIT access; providers MUST validate one exact verifier-configuration snapshot and MUST NOT normalize, trim, coerce, infer, or disclose persisted authorizing identity values.';
 const activeLookupTransactionSemantics = 'API-key and entitlement lookup MUST row-lock the matching key in a serializable transaction before evaluating active, revocation, expiry, or current-scope state. Expiry MUST be evaluated with a non-transaction-start persistence wall clock after the lock and rechecked after response validation immediately before COMMIT; unknown, inactive, concurrently revoked, expired, or invalid-scope keys MUST fail closed without disclosure. Entitlement lookup MUST also row-lock the resolved organization entitlement before response validation.';
 const apiKeyResponseSchema = schemas.find(({ file }) => file.endsWith('identity-api-key-response.schema.json'))?.schema;
 const cliSessionAuthorizedSchema = schemas.find(({ file }) => file.endsWith('identity-cli-session-authorized.schema.json'))?.schema;
+const apiKeyLookupSchema = schemas.find(({ file }) => file.endsWith('identity-api-key-lookup.schema.json'))?.schema;
+const cliSessionAuthorizeSchema = schemas.find(({ file }) => file.endsWith('identity-cli-session-authorize.schema.json'))?.schema;
+const cliSessionPollSchema = schemas.find(({ file }) => file.endsWith('identity-cli-session-poll.schema.json'))?.schema;
+if (apiKeyLookupSchema?.properties?.key_hash?.description !== canonicalPersistedApiKeyHashSemantics ||
+    cliSessionAuthorizeSchema?.['x-persisted-api-key-hash'] !== canonicalPersistedApiKeyHashSemantics ||
+    cliSessionPollSchema?.['x-persisted-api-key-hash'] !== canonicalPersistedApiKeyHashSemantics ||
+    contracts.IdentityApiKeyLookupSchema.shape.key_hash.description !== canonicalPersistedApiKeyHashSemantics ||
+    contracts.IdentityApiKeyHashSchema.description !== canonicalPersistedApiKeyHashSemantics) {
+  throw new Error('identity contracts lack canonical persisted API-key hash semantics');
+}
+for (const key_hash of ['A'.repeat(64), ` ${'a'.repeat(64)}`]) {
+  requireInvalid('identity-api-key-lookup', { key_hash });
+  requireRuntimeInvalid(
+    contracts.IdentityApiKeyHashSchema,
+    key_hash,
+    'identity-api-key-hash malformed persisted hash',
+  );
+}
 if (apiKeyResponseSchema?.properties?.key_id?.description !== canonicalPersistedApiKeyIdSemantics ||
     cliSessionAuthorizedSchema?.properties?.key_id?.description !== canonicalPersistedApiKeyIdSemantics ||
     contracts.IdentityApiKeyResponseSchema.shape.key_id.description !== canonicalPersistedApiKeyIdSemantics ||

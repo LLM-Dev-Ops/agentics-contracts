@@ -26,6 +26,7 @@ export interface DataPlanePrincipal { subject:string;principal:string;organizati
 export const DataPlanePrincipalSchema: z.ZodType<DataPlanePrincipal>;
 export interface IdentityApiKeyLookup { key_hash:string }
 export const IdentityApiKeyLookupSchema: z.ZodType<IdentityApiKeyLookup>;
+export const IdentityApiKeyHashSchema: z.ZodType<string>;
 export const IdentityApiKeyIdSchema: z.ZodType<string>;
 export type IdentityCliSessionStatus = 'pending'|'completed';
 export const IdentityCliSessionStatusSchema: z.ZodType<IdentityCliSessionStatus>;

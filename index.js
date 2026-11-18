@@ -52,8 +52,12 @@ const DataPlanePrincipalSchema = z.object({
   audience: z.string().min(1),
   mapping_source: z.literal('configured_principal_binding')
 }).describe(principalAuthoritySemantics);
+const canonicalPersistedApiKeyHashSemantics = 'Every persisted API-key hash resolved from an active API-key row MUST already be exactly 64 lowercase ASCII hexadecimal characters. Missing, malformed, non-string, uppercase, whitespace-padded, or alternate values MUST fail closed immediately after the key row lock and before key activity evaluation, replay or delivery response emission, persistence mutation, or COMMIT; providers MUST NOT lowercase, normalize, trim, coerce, infer, or disclose persisted key hashes.';
+const IdentityApiKeyHashSchema = z.string().regex(/^[a-f0-9]{64}$/).describe(
+  canonicalPersistedApiKeyHashSemantics
+);
 const IdentityApiKeyLookupSchema = z.object({
-  key_hash: z.string().regex(/^[a-f0-9]{64}$/)
+  key_hash: IdentityApiKeyHashSchema
 }).strict();
 const canonicalIdentityScopeSemantics = 'Every configured, requested, and persisted identity scope MUST be a non-empty Unicode-scalar string already in exact NFKC normalization and MUST NOT contain Unicode White_Space property characters, Unicode C0/C1 control characters, Unicode General Category Cf format controls, Unicode noncharacter code points, Unicode private-use code points, Unicode variation selectors, Unicode default-ignorable code points, or Unicode combining marks. Canonically or compatibility-equivalent alternate spellings, whitespace-bearing values, control-bearing values, format-control-bearing values, noncharacter-bearing values, private-use-bearing values, variation-selector-bearing values, default-ignorable-bearing values, and combining-mark-bearing values MUST fail closed before identity verification, entitlement evaluation, API-key creation, response emission, or persistence access; providers MUST NOT normalize, trim, or sanitize caller, configuration, or persisted scope values.';
 const IdentityScopeSchema = z.string().min(1).refine(isWellFormedUnicode).refine(
@@ -333,7 +337,7 @@ module.exports = {
   CANONICAL_SCHEMA_NAMES: Object.freeze(['ExecutionIntent','ExecutionGraph','CoreExecutionResult','EvidenceSummary','PolicyDecision','CostReference','ExecutionContext','ResultPacket','DataPlanePrincipal','IdentityApiKeyLookup','IdentityApiKeyResponse','IdentityEntitlementResponse','IdentityCliSessionCreate','IdentityCliSessionCreated','IdentityCliSessionAuthorize','IdentityCliSessionAuthorized','IdentityCliSessionPoll','SimulationEventsAppendRequest','SimulationEventsResponse','ResultIndexStoreRequest','ResultIndexResponse','ResultIndexListResponse','ResultIndexScenarioResponse','ResultIndexSummaryResponse','UsageLedgerEntryAppendRequest','UsageLedgerEntryResponse','UsageLedgerBalanceResponse','UsageLedgerReservationCreateRequest','UsageLedgerReservationActionRequest','UsageLedgerReservationResponse']),
   ExecutionIntentSchema,NodeType,GraphNodeSchema,GraphEdgeSchema,ExecutionGraphSchema,EvidenceEntrySchema,EvidenceSummarySchema,
   CostReferenceSchema,ResultStatus,CoreExecutionResultSchema,PolicyDecisionSchema,ExecutionContextSchema,ResultPacketSchema,
-  DataPlanePrincipalSchema,IdentityApiKeyLookupSchema,IdentityApiKeyIdSchema,IdentityCliSessionStatusSchema,IdentityCliSessionCodeSchema,IdentityEndUserIssuerSchema,IdentityEndUserSubjectSchema,IdentityOrganizationIdSchema,IdentityMembershipEmailSchema,IdentityMembershipPaymentStatusSchema,IdentityMembershipRoleSchema,IdentityApiKeyResponseSchema,IdentityEntitlementResponseSchema,
+  DataPlanePrincipalSchema,IdentityApiKeyLookupSchema,IdentityApiKeyHashSchema,IdentityApiKeyIdSchema,IdentityCliSessionStatusSchema,IdentityCliSessionCodeSchema,IdentityEndUserIssuerSchema,IdentityEndUserSubjectSchema,IdentityOrganizationIdSchema,IdentityMembershipEmailSchema,IdentityMembershipPaymentStatusSchema,IdentityMembershipRoleSchema,IdentityApiKeyResponseSchema,IdentityEntitlementResponseSchema,
   IdentityCliSessionCreateSchema,IdentityCliSessionCreatedSchema,IdentityCliSessionAuthorizeSchema,IdentityCliSessionAuthorizedSchema,IdentityCliSessionPollSchema,
   SimulationEventKind,SimulationEventAppendItemSchema,SimulationEventsAppendRequestSchema,SimulationEventSchema,SimulationEventsResponseSchema,
   ResultIndexLayerRecordSchema,ResultIndexExecutionProofSchema,ResultIndexExecutionMetadataSchema,ResultIndexExecutionContextSchema,ResultIndexSummarySchema,
@@ -492,6 +496,7 @@ module.exports.ExecutionContextSchema = module.exports.ExecutionContextSchema;
 module.exports.ResultPacketSchema = module.exports.ResultPacketSchema;
 module.exports.DataPlanePrincipalSchema = module.exports.DataPlanePrincipalSchema;
 module.exports.IdentityApiKeyLookupSchema = module.exports.IdentityApiKeyLookupSchema;
+module.exports.IdentityApiKeyHashSchema = module.exports.IdentityApiKeyHashSchema;
 module.exports.IdentityApiKeyIdSchema = module.exports.IdentityApiKeyIdSchema;
 module.exports.IdentityCliSessionStatusSchema = module.exports.IdentityCliSessionStatusSchema;
 module.exports.IdentityCliSessionCodeSchema = module.exports.IdentityCliSessionCodeSchema;
