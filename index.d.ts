@@ -29,6 +29,7 @@ export const IdentityApiKeyLookupSchema: z.ZodType<IdentityApiKeyLookup>;
 export const IdentityApiKeyIdSchema: z.ZodType<string>;
 export type IdentityCliSessionStatus = 'pending'|'completed';
 export const IdentityCliSessionStatusSchema: z.ZodType<IdentityCliSessionStatus>;
+export const IdentityCliSessionCodeSchema: z.ZodType<string>;
 export const IdentityEndUserIssuerSchema: z.ZodType<string>;
 export const IdentityEndUserSubjectSchema: z.ZodType<string>;
 export const IdentityOrganizationIdSchema: z.ZodType<string>;

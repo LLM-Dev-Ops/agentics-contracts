@@ -96,6 +96,7 @@ const canonicalPersistedMembershipPaymentStatusSemantics = 'Every persisted paym
 const canonicalPersistedApiKeyNameSemantics = 'Every persisted API-key name returned by active-key lookup MUST remain a non-empty NFC-normalized Unicode-scalar string without surrounding whitespace, Unicode C0/C1 control characters, Unicode line or paragraph separators, Unicode format or bidirectional controls, Unicode noncharacter code points, or Unicode private-use code points. Malformed or noncanonical persisted names MUST fail closed after the key row lock and before response emission or COMMIT; providers MUST NOT normalize, trim, sanitize, or disclose them.';
 const canonicalPersistedApiKeyIdSemantics = 'Every persisted API-key identifier resolved from an active key row or completed CLI session MUST already be an exact lowercase canonical RFC 4122 UUID. Malformed, uppercase, non-string, empty, or alternate identifiers MUST fail closed immediately after the relevant row lock and before key-activity evaluation, membership or entitlement access, response emission, persistence mutation, or COMMIT; providers MUST NOT lowercase, normalize, coerce, infer, or disclose them.';
 const canonicalPersistedCliSessionStatusSemantics = 'Every persisted CLI session status resolved for authorization or polling MUST be exactly pending or completed. Missing, malformed, non-string, or alternate values MUST fail closed immediately after the session row lock and before session-expiry evaluation, tenant-quota, membership, API-key, delivery-state, response, persistence-mutation, or COMMIT access; providers MUST NOT normalize, coerce, infer, or disclose them.';
+const canonicalPersistedCliSessionCodeSemantics = 'Every persisted CLI session_code resolved from a row lock MUST already be exactly eight uppercase ASCII letters or digits. Missing, malformed, non-string, lowercase, whitespace-padded, or alternate values MUST fail closed immediately after the session row lock and before status, session-expiry, membership, API-key, delivery-state, response, persistence-mutation, or COMMIT access; providers MUST NOT uppercase, normalize, trim, coerce, infer, or disclose persisted session codes.';
 const canonicalPersistedCliAuthorizingIdentitySemantics = 'Every completed CLI session authorized_issuer MUST be the exact configured canonical HTTPS end-user JWT issuer and authorized_subject MUST be a non-empty Unicode-scalar string without surrounding whitespace. Missing, malformed, non-string, whitespace-padded, noncanonical, or configuration-mismatched values MUST fail closed immediately after the session row lock and before session-expiry evaluation, membership, API-key, delivery-state, response, persistence-mutation, or COMMIT access; providers MUST validate one exact verifier-configuration snapshot and MUST NOT normalize, trim, coerce, infer, or disclose persisted authorizing identity values.';
 const activeLookupTransactionSemantics = 'API-key and entitlement lookup MUST row-lock the matching key in a serializable transaction before evaluating active, revocation, expiry, or current-scope state. Expiry MUST be evaluated with a non-transaction-start persistence wall clock after the lock and rechecked after response validation immediately before COMMIT; unknown, inactive, concurrently revoked, expired, or invalid-scope keys MUST fail closed without disclosure. Entitlement lookup MUST also row-lock the resolved organization entitlement before response validation.';
 const apiKeyResponseSchema = schemas.find(({ file }) => file.endsWith('identity-api-key-response.schema.json'))?.schema;
@@ -417,6 +418,23 @@ if (authorizeAuthority?.['x-persisted-membership-payment-status'] !== canonicalP
 if (authorizeAuthority?.['x-persisted-cli-session-status'] !== canonicalPersistedCliSessionStatusSemantics ||
     contracts.IdentityCliSessionStatusSchema.description !== canonicalPersistedCliSessionStatusSemantics) {
   throw new Error('identity-cli-session-authorize lacks canonical persisted session-status semantics');
+}
+if (authorizeAuthority?.['x-persisted-cli-session-code'] !== canonicalPersistedCliSessionCodeSemantics ||
+    authorizeAuthority?.properties?.session_code?.description !== canonicalPersistedCliSessionCodeSemantics ||
+    contracts.IdentityCliSessionCodeSchema.description !== canonicalPersistedCliSessionCodeSemantics ||
+    contracts.IdentityCliSessionAuthorizeSchema.shape.session_code.description !== canonicalPersistedCliSessionCodeSemantics ||
+    contracts.IdentityCliSessionCreatedSchema.shape.session_code.description !== canonicalPersistedCliSessionCodeSemantics) {
+  throw new Error('identity CLI session contracts lack canonical persisted session-code semantics');
+}
+if (!contracts.IdentityCliSessionCodeSchema.safeParse('ABCD1234').success) {
+  throw new Error('persisted CLI session-code authority rejected a canonical value');
+}
+for (const persistedSessionCode of ['abcd1234', ' ABCD1234', 'ABCD1234 ', 'ABC-1234', '', 1, null]) {
+  requireRuntimeInvalid(
+    contracts.IdentityCliSessionCodeSchema,
+    persistedSessionCode,
+    'identity-cli-session malformed persisted session code',
+  );
 }
 if (authorizeAuthority?.['x-persisted-cli-authorizing-identity'] !== canonicalPersistedCliAuthorizingIdentitySemantics ||
     contracts.IdentityEndUserIssuerSchema.description !== canonicalPersistedCliAuthorizingIdentitySemantics ||
@@ -1008,6 +1026,9 @@ if (pollAuthority?.['x-persisted-membership-payment-status'] !== canonicalPersis
 }
 if (pollAuthority?.['x-persisted-cli-session-status'] !== canonicalPersistedCliSessionStatusSemantics) {
   throw new Error('identity-cli-session-poll lacks canonical persisted session-status semantics');
+}
+if (pollAuthority?.['x-persisted-cli-session-code'] !== canonicalPersistedCliSessionCodeSemantics) {
+  throw new Error('identity-cli-session-poll lacks canonical persisted session-code semantics');
 }
 if (pollAuthority?.['x-persisted-cli-authorizing-identity'] !== canonicalPersistedCliAuthorizingIdentitySemantics) {
   throw new Error('identity-cli-session-poll lacks canonical persisted authorizing-identity semantics');

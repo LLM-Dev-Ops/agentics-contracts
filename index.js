@@ -118,6 +118,10 @@ const canonicalPersistedCliSessionStatusSemantics = 'Every persisted CLI session
 const IdentityCliSessionStatusSchema = z.enum(['pending','completed']).describe(
   canonicalPersistedCliSessionStatusSemantics
 );
+const canonicalPersistedCliSessionCodeSemantics = 'Every persisted CLI session_code resolved from a row lock MUST already be exactly eight uppercase ASCII letters or digits. Missing, malformed, non-string, lowercase, whitespace-padded, or alternate values MUST fail closed immediately after the session row lock and before status, session-expiry, membership, API-key, delivery-state, response, persistence-mutation, or COMMIT access; providers MUST NOT uppercase, normalize, trim, coerce, infer, or disclose persisted session codes.';
+const IdentityCliSessionCodeSchema = z.string().regex(/^[A-Z0-9]{8}$/).describe(
+  canonicalPersistedCliSessionCodeSemantics
+);
 const canonicalPersistedCliAuthorizingIdentitySemantics = 'Every completed CLI session authorized_issuer MUST be the exact configured canonical HTTPS end-user JWT issuer and authorized_subject MUST be a non-empty Unicode-scalar string without surrounding whitespace. Missing, malformed, non-string, whitespace-padded, noncanonical, or configuration-mismatched values MUST fail closed immediately after the session row lock and before session-expiry evaluation, membership, API-key, delivery-state, response, persistence-mutation, or COMMIT access; providers MUST validate one exact verifier-configuration snapshot and MUST NOT normalize, trim, coerce, infer, or disclose persisted authorizing identity values.';
 const IdentityEndUserIssuerSchema = z.string().min(1).refine((value) => {
   if (value.trim() !== value || !isWellFormedUnicode(value)) return false;
@@ -168,7 +172,7 @@ const sessionCreateAtomicitySemantics = 'CLI session creation MUST insert the pr
 const sessionCreateFreshExpirySemantics = 'After provisional insertion has acquired storage constraints, the provider MUST refresh expires_at from a non-transaction-start persistence wall clock, construct and validate the response from that refreshed expiry, and recheck that the session remains unexpired immediately before COMMIT. A session that expires during creation MUST roll back instead of returning an already-expired session with a fresh lifetime claim.';
 const sessionVerificationUrlConfigurationSemantics = 'The configured CLI verification URL MUST be an exact canonically serialized HTTPS URL without surrounding whitespace, username, password, query, or fragment. Parsing and serializing MUST reproduce the exact configured string. Providers MUST validate one exact snapshot at startup and request time before persistence access or provisional session insertion and MUST use that snapshot to construct verification_url by adding only the generated session code. Malformed, non-canonical, explicit-default-port, dot-segment, credential-bearing, query-bearing, fragment-bearing, or non-string configuration MUST fail closed as identity_configuration_error.';
 const IdentityCliSessionCreatedSchema = z.object({
-  session_code: z.string().regex(/^[A-Z0-9]{8}$/),
+  session_code: IdentityCliSessionCodeSchema,
   device_code: z.string().regex(/^[a-f0-9]{64}$/),
   verification_url: z.string().url(),
   expires_at: z.string().datetime(),
@@ -197,7 +201,7 @@ const endUserJwtConfigurationSemantics = 'The configured end-user JWT issuer and
 const endUserJwtEmailSemantics = 'The optional email claim, when present, MUST be a valid non-empty email string without surrounding whitespace and MUST be normalized to lowercase only after validation. A malformed, empty, whitespace-padded, or non-string email claim MUST fail closed before membership or persistence access instead of being treated as absent.';
 const endUserJwtLifetimeSemantics = endUserJwtProtectedHeaderSemantics + ' ' + endUserJwtConfigurationSemantics + ' CLI authorization MUST accept exactly one Authorization credential containing a non-empty Bearer JWT without surrounding token whitespace; missing, duplicate, empty, or whitespace-padded credentials MUST fail closed before identity verification, membership access, or persistence access. Providers MUST determine Authorization multiplicity from the raw wire-level header occurrences; normalized header maps that collapse duplicates are insufficient. The end-user JWT used for CLI authorization MUST be signature-verified and contain the configured issuer and audience, a non-empty string subject without surrounding whitespace, and a valid numeric expiration claim. Missing, malformed, empty, whitespace-padded, or non-string subject claims and missing, malformed, or expired expiration MUST fail closed before membership or persistence access; a correctly signed token without exp is not an authorized identity. The aud claim MUST be either the configured non-empty audience string or a non-empty array of unique non-empty strings without surrounding whitespace containing the configured audience exactly once. Every audience entry and any present azp MUST contain only Unicode scalar values; malformed, empty, whitespace-only, whitespace-padded, duplicate, or unpaired-surrogate audience values MUST fail closed before membership or persistence access. When aud contains multiple values, azp MUST be present and exactly match the configured audience; whenever azp is present it MUST match that audience. Missing or mismatched authorized-party binding MUST fail closed before membership or persistence access. ' + endUserJwtEmailSemantics;
 const IdentityCliSessionAuthorizeSchema = z.object({
-  session_code: z.string().regex(/^[A-Z0-9]{8}$/),
+  session_code: IdentityCliSessionCodeSchema,
   key_name: z.string().min(1).max(255).refine(canonicalCliMetadata).describe(canonicalCliMetadataSemantics).optional(),
   scopes: IdentityScopeListSchema.optional()
 }).strict().describe(
@@ -325,7 +329,7 @@ module.exports = {
   CANONICAL_SCHEMA_NAMES: Object.freeze(['ExecutionIntent','ExecutionGraph','CoreExecutionResult','EvidenceSummary','PolicyDecision','CostReference','ExecutionContext','ResultPacket','DataPlanePrincipal','IdentityApiKeyLookup','IdentityApiKeyResponse','IdentityEntitlementResponse','IdentityCliSessionCreate','IdentityCliSessionCreated','IdentityCliSessionAuthorize','IdentityCliSessionAuthorized','IdentityCliSessionPoll','SimulationEventsAppendRequest','SimulationEventsResponse','ResultIndexStoreRequest','ResultIndexResponse','ResultIndexListResponse','ResultIndexScenarioResponse','ResultIndexSummaryResponse','UsageLedgerEntryAppendRequest','UsageLedgerEntryResponse','UsageLedgerBalanceResponse','UsageLedgerReservationCreateRequest','UsageLedgerReservationActionRequest','UsageLedgerReservationResponse']),
   ExecutionIntentSchema,NodeType,GraphNodeSchema,GraphEdgeSchema,ExecutionGraphSchema,EvidenceEntrySchema,EvidenceSummarySchema,
   CostReferenceSchema,ResultStatus,CoreExecutionResultSchema,PolicyDecisionSchema,ExecutionContextSchema,ResultPacketSchema,
-  DataPlanePrincipalSchema,IdentityApiKeyLookupSchema,IdentityApiKeyIdSchema,IdentityCliSessionStatusSchema,IdentityEndUserIssuerSchema,IdentityEndUserSubjectSchema,IdentityOrganizationIdSchema,IdentityMembershipEmailSchema,IdentityMembershipPaymentStatusSchema,IdentityApiKeyResponseSchema,IdentityEntitlementResponseSchema,
+  DataPlanePrincipalSchema,IdentityApiKeyLookupSchema,IdentityApiKeyIdSchema,IdentityCliSessionStatusSchema,IdentityCliSessionCodeSchema,IdentityEndUserIssuerSchema,IdentityEndUserSubjectSchema,IdentityOrganizationIdSchema,IdentityMembershipEmailSchema,IdentityMembershipPaymentStatusSchema,IdentityApiKeyResponseSchema,IdentityEntitlementResponseSchema,
   IdentityCliSessionCreateSchema,IdentityCliSessionCreatedSchema,IdentityCliSessionAuthorizeSchema,IdentityCliSessionAuthorizedSchema,IdentityCliSessionPollSchema,
   SimulationEventKind,SimulationEventAppendItemSchema,SimulationEventsAppendRequestSchema,SimulationEventSchema,SimulationEventsResponseSchema,
   ResultIndexLayerRecordSchema,ResultIndexExecutionProofSchema,ResultIndexExecutionMetadataSchema,ResultIndexExecutionContextSchema,ResultIndexSummarySchema,
@@ -486,6 +490,7 @@ module.exports.DataPlanePrincipalSchema = module.exports.DataPlanePrincipalSchem
 module.exports.IdentityApiKeyLookupSchema = module.exports.IdentityApiKeyLookupSchema;
 module.exports.IdentityApiKeyIdSchema = module.exports.IdentityApiKeyIdSchema;
 module.exports.IdentityCliSessionStatusSchema = module.exports.IdentityCliSessionStatusSchema;
+module.exports.IdentityCliSessionCodeSchema = module.exports.IdentityCliSessionCodeSchema;
 module.exports.IdentityEndUserIssuerSchema = module.exports.IdentityEndUserIssuerSchema;
 module.exports.IdentityEndUserSubjectSchema = module.exports.IdentityEndUserSubjectSchema;
 module.exports.IdentityOrganizationIdSchema = module.exports.IdentityOrganizationIdSchema;
