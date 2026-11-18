@@ -100,6 +100,11 @@ const canonicalMetadataValue = (value) =>
   isWellFormedUnicode(value);
 const canonicalIdentityOrganizationSemantics = 'Every persisted organization_id resolved from an API key, entitlement, active membership, or completed CLI session MUST be a non-empty, at-most-255-character, exact NFC-normalized Unicode-scalar string without surrounding whitespace, Unicode C0/C1 control characters, Unicode line or paragraph separators, Unicode format or bidirectional controls, Unicode noncharacter code points, or Unicode private-use code points. Malformed or noncanonical organization identifiers from an API-key row MUST fail closed immediately after that row lock and before key activity evaluation or entitlement access. Malformed or noncanonical active-membership or completed-session organization identifiers MUST fail closed immediately after their row lock and before CLI session access, membership access, tenant-quota or API-key access, response emission, persistence mutation, or COMMIT; providers MUST NOT normalize, trim, sanitize, coerce, or disclose them.';
 const IdentityOrganizationIdSchema = z.string().min(1).max(255).refine(canonicalMetadataValue).describe(canonicalIdentityOrganizationSemantics);
+const canonicalPersistedMembershipEmailSemantics = 'Every persisted email resolved from an active identity membership MUST be a valid non-empty, at-most-320-character, exact lowercase NFC-normalized Unicode-scalar email string without surrounding whitespace, Unicode C0/C1 control characters, Unicode line or paragraph separators, Unicode format or bidirectional controls, Unicode noncharacter code points, or Unicode private-use code points. Malformed or noncanonical membership email values MUST fail closed immediately after the membership row lock and before CLI session, tenant-quota, API-key, delivery-state, response, persistence-mutation, or COMMIT access; providers MUST NOT lowercase, normalize, trim, sanitize, coerce, or disclose them.';
+const IdentityMembershipEmailSchema = z.string().min(1).max(320).email().refine(canonicalMetadataValue).refine(
+  (value) => value.toLowerCase() === value,
+  { message: 'Persisted membership emails must already be lowercase' }
+).describe(canonicalPersistedMembershipEmailSemantics);
 const canonicalPersistedApiKeyNameSemantics = 'Every persisted API-key name returned by active-key lookup MUST remain a non-empty NFC-normalized Unicode-scalar string without surrounding whitespace, Unicode C0/C1 control characters, Unicode line or paragraph separators, Unicode format or bidirectional controls, Unicode noncharacter code points, or Unicode private-use code points. Malformed or noncanonical persisted names MUST fail closed after the key row lock and before response emission or COMMIT; providers MUST NOT normalize, trim, sanitize, or disclose them.';
 const activeApiKeyScopeSemantics = "An active API key response MUST contain a non-empty unique scope list that remains a subset of the provider's current allowlist; empty, malformed, duplicate, or retired scopes MUST fail closed and MUST NOT resolve as an active key.";
 const activeLookupTransactionSemantics = 'API-key and entitlement lookup MUST row-lock the matching key in a serializable transaction before evaluating active, revocation, expiry, or current-scope state. Expiry MUST be evaluated with a non-transaction-start persistence wall clock after the lock and rechecked after response validation immediately before COMMIT; unknown, inactive, concurrently revoked, expired, or invalid-scope keys MUST fail closed without disclosure. Entitlement lookup MUST also row-lock the resolved organization entitlement before response validation.';
@@ -183,7 +188,7 @@ const IdentityCliSessionPollSchema = z.union([
   z.object({
     status: z.literal('completed'),
     api_key: z.string().min(1).optional(),
-    email: z.string().email(),
+    email: IdentityMembershipEmailSchema,
     payment_status: z.enum(['paid','unpaid','trial','internal']),
     organization_id: IdentityOrganizationIdSchema,
     role: z.literal('owner')
@@ -293,7 +298,7 @@ module.exports = {
   CANONICAL_SCHEMA_NAMES: Object.freeze(['ExecutionIntent','ExecutionGraph','CoreExecutionResult','EvidenceSummary','PolicyDecision','CostReference','ExecutionContext','ResultPacket','DataPlanePrincipal','IdentityApiKeyLookup','IdentityApiKeyResponse','IdentityEntitlementResponse','IdentityCliSessionCreate','IdentityCliSessionCreated','IdentityCliSessionAuthorize','IdentityCliSessionAuthorized','IdentityCliSessionPoll','SimulationEventsAppendRequest','SimulationEventsResponse','ResultIndexStoreRequest','ResultIndexResponse','ResultIndexListResponse','ResultIndexScenarioResponse','ResultIndexSummaryResponse','UsageLedgerEntryAppendRequest','UsageLedgerEntryResponse','UsageLedgerBalanceResponse','UsageLedgerReservationCreateRequest','UsageLedgerReservationActionRequest','UsageLedgerReservationResponse']),
   ExecutionIntentSchema,NodeType,GraphNodeSchema,GraphEdgeSchema,ExecutionGraphSchema,EvidenceEntrySchema,EvidenceSummarySchema,
   CostReferenceSchema,ResultStatus,CoreExecutionResultSchema,PolicyDecisionSchema,ExecutionContextSchema,ResultPacketSchema,
-  DataPlanePrincipalSchema,IdentityApiKeyLookupSchema,IdentityOrganizationIdSchema,IdentityApiKeyResponseSchema,IdentityEntitlementResponseSchema,
+  DataPlanePrincipalSchema,IdentityApiKeyLookupSchema,IdentityOrganizationIdSchema,IdentityMembershipEmailSchema,IdentityApiKeyResponseSchema,IdentityEntitlementResponseSchema,
   IdentityCliSessionCreateSchema,IdentityCliSessionCreatedSchema,IdentityCliSessionAuthorizeSchema,IdentityCliSessionAuthorizedSchema,IdentityCliSessionPollSchema,
   SimulationEventKind,SimulationEventAppendItemSchema,SimulationEventsAppendRequestSchema,SimulationEventSchema,SimulationEventsResponseSchema,
   ResultIndexLayerRecordSchema,ResultIndexExecutionProofSchema,ResultIndexExecutionMetadataSchema,ResultIndexExecutionContextSchema,ResultIndexSummarySchema,
@@ -453,6 +458,7 @@ module.exports.ResultPacketSchema = module.exports.ResultPacketSchema;
 module.exports.DataPlanePrincipalSchema = module.exports.DataPlanePrincipalSchema;
 module.exports.IdentityApiKeyLookupSchema = module.exports.IdentityApiKeyLookupSchema;
 module.exports.IdentityOrganizationIdSchema = module.exports.IdentityOrganizationIdSchema;
+module.exports.IdentityMembershipEmailSchema = module.exports.IdentityMembershipEmailSchema;
 module.exports.IdentityApiKeyResponseSchema = module.exports.IdentityApiKeyResponseSchema;
 module.exports.IdentityEntitlementResponseSchema = module.exports.IdentityEntitlementResponseSchema;
 module.exports.IdentityCliSessionCreateSchema = module.exports.IdentityCliSessionCreateSchema;

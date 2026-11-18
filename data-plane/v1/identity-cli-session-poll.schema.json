@@ -2,6 +2,7 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "https://agentics.org/contracts/data-plane/v1/identity-cli-session-poll.schema.json",
   "title": "CLI device authorization poll response",
+  "x-persisted-membership-email": "Every persisted email resolved from an active identity membership MUST be a valid non-empty, at-most-320-character, exact lowercase NFC-normalized Unicode-scalar email string without surrounding whitespace, Unicode C0/C1 control characters, Unicode line or paragraph separators, Unicode format or bidirectional controls, Unicode noncharacter code points, or Unicode private-use code points. Malformed or noncanonical membership email values MUST fail closed immediately after the membership row lock and before CLI session, tenant-quota, API-key, delivery-state, response, persistence-mutation, or COMMIT access; providers MUST NOT lowercase, normalize, trim, sanitize, coerce, or disclose them.",
   "oneOf": [
     {
       "type": "object",
@@ -17,7 +18,24 @@
       "properties": {
         "status": { "const": "completed" },
         "api_key": { "type": "string", "minLength": 1 },
-        "email": { "type": "string", "format": "email" },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "minLength": 1,
+          "maxLength": 320,
+          "description": "Every persisted email resolved from an active identity membership MUST be a valid non-empty, at-most-320-character, exact lowercase NFC-normalized Unicode-scalar email string without surrounding whitespace, Unicode C0/C1 control characters, Unicode line or paragraph separators, Unicode format or bidirectional controls, Unicode noncharacter code points, or Unicode private-use code points. Malformed or noncanonical membership email values MUST fail closed immediately after the membership row lock and before CLI session, tenant-quota, API-key, delivery-state, response, persistence-mutation, or COMMIT access; providers MUST NOT lowercase, normalize, trim, sanitize, coerce, or disclose them.",
+          "x-unicode-normalization": "NFC",
+          "allOf": [
+            { "pattern": "^(?:[^\\uD800-\\uDFFF]|[\\uD800-\\uDBFF][\\uDC00-\\uDFFF])*$" },
+            { "pattern": "^[^\\u0000-\\u001F\\u007F-\\u009F]*$" },
+            { "pattern": "^(?!\\s)(?![\\s\\S]*\\s$)[\\s\\S]*$" },
+            { "pattern": "^(?![\\s\\S]*[\\u2028\\u2029])[\\s\\S]*$" },
+            { "pattern": "^(?![\\s\\S]*\\p{Cf})[\\s\\S]*$" },
+            { "pattern": "^(?![\\s\\S]*\\p{Noncharacter_Code_Point})[\\s\\S]*$" },
+            { "pattern": "^(?![\\s\\S]*\\p{Co})[\\s\\S]*$" },
+            { "pattern": "^[^A-Z]*$" }
+          ]
+        },
         "payment_status": { "enum": ["paid", "unpaid", "trial", "internal"] },
         "organization_id": {
           "type": "string",
