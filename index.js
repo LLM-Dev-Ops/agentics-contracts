@@ -117,7 +117,10 @@ const canonicalPersistedMembershipRoleSemantics = 'Every persisted role resolved
 const IdentityMembershipRoleSchema = z.literal('owner').describe(
   canonicalPersistedMembershipRoleSemantics
 );
-const canonicalPersistedApiKeyNameSemantics = 'Every persisted API-key name returned by active-key lookup MUST remain a non-empty NFC-normalized Unicode-scalar string without surrounding whitespace, Unicode C0/C1 control characters, Unicode line or paragraph separators, Unicode format or bidirectional controls, Unicode noncharacter code points, or Unicode private-use code points. Malformed or noncanonical persisted names MUST fail closed after the key row lock and before response emission or COMMIT; providers MUST NOT normalize, trim, sanitize, or disclose them.';
+const canonicalPersistedApiKeyNameSemantics = 'Every persisted API-key name resolved from an active API-key row MUST already be a non-empty, at-most-255-character, exact NFC-normalized Unicode-scalar string without surrounding whitespace, Unicode C0/C1 control characters, Unicode line or paragraph separators, Unicode format or bidirectional controls, Unicode noncharacter code points, or Unicode private-use code points. Missing, malformed, non-string, or noncanonical names MUST fail closed immediately after the key row lock and before key activity evaluation, replay or delivery response emission, persistence mutation, or COMMIT; providers MUST NOT normalize, trim, sanitize, coerce, infer, or disclose persisted key names.';
+const IdentityApiKeyNameSchema = z.string().min(1).max(255).refine(canonicalMetadataValue).describe(
+  canonicalPersistedApiKeyNameSemantics
+);
 const canonicalPersistedApiKeyIdSemantics = 'Every persisted API-key identifier resolved from an active key row or completed CLI session MUST already be an exact lowercase canonical RFC 4122 UUID. Malformed, uppercase, non-string, empty, or alternate identifiers MUST fail closed immediately after the relevant row lock and before key-activity evaluation, membership or entitlement access, response emission, persistence mutation, or COMMIT; providers MUST NOT lowercase, normalize, coerce, infer, or disclose them.';
 const IdentityApiKeyIdSchema = z.string().regex(
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/
@@ -150,7 +153,7 @@ const activeLookupTransactionSemantics = 'API-key and entitlement lookup MUST ro
 const IdentityApiKeyResponseSchema = z.object({
   key_id: IdentityApiKeyIdSchema,
   organization_id: IdentityOrganizationIdSchema,
-  name: z.string().min(1).max(255).refine(canonicalMetadataValue).describe(canonicalPersistedApiKeyNameSemantics),
+  name: IdentityApiKeyNameSchema,
   scopes: IdentityScopeListSchema.describe(activeApiKeyScopeSemantics),
   created_at: z.string().datetime(),
   expires_at: z.string().datetime().nullable(),
@@ -337,7 +340,7 @@ module.exports = {
   CANONICAL_SCHEMA_NAMES: Object.freeze(['ExecutionIntent','ExecutionGraph','CoreExecutionResult','EvidenceSummary','PolicyDecision','CostReference','ExecutionContext','ResultPacket','DataPlanePrincipal','IdentityApiKeyLookup','IdentityApiKeyResponse','IdentityEntitlementResponse','IdentityCliSessionCreate','IdentityCliSessionCreated','IdentityCliSessionAuthorize','IdentityCliSessionAuthorized','IdentityCliSessionPoll','SimulationEventsAppendRequest','SimulationEventsResponse','ResultIndexStoreRequest','ResultIndexResponse','ResultIndexListResponse','ResultIndexScenarioResponse','ResultIndexSummaryResponse','UsageLedgerEntryAppendRequest','UsageLedgerEntryResponse','UsageLedgerBalanceResponse','UsageLedgerReservationCreateRequest','UsageLedgerReservationActionRequest','UsageLedgerReservationResponse']),
   ExecutionIntentSchema,NodeType,GraphNodeSchema,GraphEdgeSchema,ExecutionGraphSchema,EvidenceEntrySchema,EvidenceSummarySchema,
   CostReferenceSchema,ResultStatus,CoreExecutionResultSchema,PolicyDecisionSchema,ExecutionContextSchema,ResultPacketSchema,
-  DataPlanePrincipalSchema,IdentityApiKeyLookupSchema,IdentityApiKeyHashSchema,IdentityApiKeyIdSchema,IdentityCliSessionStatusSchema,IdentityCliSessionCodeSchema,IdentityEndUserIssuerSchema,IdentityEndUserSubjectSchema,IdentityOrganizationIdSchema,IdentityMembershipEmailSchema,IdentityMembershipPaymentStatusSchema,IdentityMembershipRoleSchema,IdentityApiKeyResponseSchema,IdentityEntitlementResponseSchema,
+  DataPlanePrincipalSchema,IdentityApiKeyLookupSchema,IdentityApiKeyHashSchema,IdentityApiKeyIdSchema,IdentityApiKeyNameSchema,IdentityCliSessionStatusSchema,IdentityCliSessionCodeSchema,IdentityEndUserIssuerSchema,IdentityEndUserSubjectSchema,IdentityOrganizationIdSchema,IdentityMembershipEmailSchema,IdentityMembershipPaymentStatusSchema,IdentityMembershipRoleSchema,IdentityApiKeyResponseSchema,IdentityEntitlementResponseSchema,
   IdentityCliSessionCreateSchema,IdentityCliSessionCreatedSchema,IdentityCliSessionAuthorizeSchema,IdentityCliSessionAuthorizedSchema,IdentityCliSessionPollSchema,
   SimulationEventKind,SimulationEventAppendItemSchema,SimulationEventsAppendRequestSchema,SimulationEventSchema,SimulationEventsResponseSchema,
   ResultIndexLayerRecordSchema,ResultIndexExecutionProofSchema,ResultIndexExecutionMetadataSchema,ResultIndexExecutionContextSchema,ResultIndexSummarySchema,
@@ -498,6 +501,7 @@ module.exports.DataPlanePrincipalSchema = module.exports.DataPlanePrincipalSchem
 module.exports.IdentityApiKeyLookupSchema = module.exports.IdentityApiKeyLookupSchema;
 module.exports.IdentityApiKeyHashSchema = module.exports.IdentityApiKeyHashSchema;
 module.exports.IdentityApiKeyIdSchema = module.exports.IdentityApiKeyIdSchema;
+module.exports.IdentityApiKeyNameSchema = module.exports.IdentityApiKeyNameSchema;
 module.exports.IdentityCliSessionStatusSchema = module.exports.IdentityCliSessionStatusSchema;
 module.exports.IdentityCliSessionCodeSchema = module.exports.IdentityCliSessionCodeSchema;
 module.exports.IdentityEndUserIssuerSchema = module.exports.IdentityEndUserIssuerSchema;

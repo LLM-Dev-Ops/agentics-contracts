@@ -28,6 +28,7 @@ export interface IdentityApiKeyLookup { key_hash:string }
 export const IdentityApiKeyLookupSchema: z.ZodType<IdentityApiKeyLookup>;
 export const IdentityApiKeyHashSchema: z.ZodType<string>;
 export const IdentityApiKeyIdSchema: z.ZodType<string>;
+export const IdentityApiKeyNameSchema: z.ZodType<string>;
 export type IdentityCliSessionStatus = 'pending'|'completed';
 export const IdentityCliSessionStatusSchema: z.ZodType<IdentityCliSessionStatus>;
 export const IdentityCliSessionCodeSchema: z.ZodType<string>;
